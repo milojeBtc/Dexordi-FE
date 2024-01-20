@@ -1,0 +1,7 @@
+const testversion = false;
+
+export const BORD_TREASURE_WALLET = testversion ? 'tb1pejnkee3xwu4f9hg8m8kc3ldh5hxu0uapkxm34yqcvpd4m5ukz7csvp86am' : 'bc1pejnkee3xwu4f9hg8m8kc3ldh5hxu0uapkxm34yqcvpd4m5ukz7csmf3485'
+
+export const CBRC_TREASURE_WALLET = testversion ? 'tb1pnpyyyr44s95xrlphvgkcc626y3xjz2cg78c84qqsllxcxapw8tdql3ewmd' : 'bc1pnpyyyr44s95xrlphvgkcc626y3xjz2cg78c84qqsllxcxapw8tdqge0ppz'
+
+export const FREN_TREASURE_WALLET = testversion ? 'tb1pcngsk49thk8e5m2ndfqv9sycltrjr4rx0prwhwr22mujl99y6szqw2kv0f' : 'bc1pcngsk49thk8e5m2ndfqv9sycltrjr4rx0prwhwr22mujl99y6szqezqr4x'
