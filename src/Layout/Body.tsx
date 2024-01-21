@@ -19,22 +19,22 @@ export default function Body() {
   const { loading, setLoading } = useUserContext();
 
   const [values, setValues] = useState({
-    value: "BORD",
-    label: "BORD",
+    value: "xODI",
+    label: "xODI",
   });
 
   const options = [
     {
-      value: "BORD",
-      label: "BORD",
+      value: "xODI",
+      label: "xODI",
     },
     {
-      value: "ODI-BORD",
-      label: "ODI-BORD",
+      value: "MEME",
+      label: "MEME",
     },
     {
-      value: "ODI-ODI",
-      label: "ODI-ODI",
+      value: "LIGO",
+      label: "LIGO",
     },
   ];
 
@@ -65,16 +65,16 @@ export default function Body() {
               STAKE $ODI (BRC20)
             </p>
           </div> */}
-          {values.value == "BORD" ? <StakeFormPanel catagory="BRC" /> : <></>}
+          {values.value == "xODI" ? <StakeFormPanel catagory="xODI" /> : <></>}
 
-          {values.value == "ODI-BORD" ? (
-            <StakeFormPanel catagory="ODI" />
+          {values.value == "MEME" ? (
+            <StakeFormPanel catagory="MEME" />
           ) : (
             <></>
           )}
 
-          {values.value == "ODI-ODI" ? (
-            <StakeFormPanel catagory="A" />
+          {values.value == "LIGO" ? (
+            <StakeFormPanel catagory="LIGO" />
           ) : (
             <></>
           )}

@@ -101,12 +101,14 @@ export const TransferInscrioption = async ({
   const params = {
     receiveAddress: receiveAddress,
     feeRate: feeRate,
-    outputValue: 900,
+    outputValue: 546,
     devAddress: receiveAddress,
     devFee: 0,
     brc20Ticker: ticker,
     brc20Amount: amount,
   };
+
+  console.log('params in transfer ==> ', params);
 
   const headers = { Authorization: BEARER_TOKEN };
   console.log("headers ==> ", headers);

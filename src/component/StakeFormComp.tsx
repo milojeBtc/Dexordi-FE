@@ -29,7 +29,7 @@ export default function StakeFormComp({ catagory }: StakeFormProps) {
     const result = await StakingProcess({
       stakingAmount: stakingAmount,
       lockTime: LockTime,
-      ticker: "DDDF"
+      ticker: "xODI"
     });
 
     console.log('staking is ended!!! ===========>');

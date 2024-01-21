@@ -41,12 +41,12 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
       return;
     }
     setLoading(true);
-    toast.loading('Please wait for staking')
+    // toast.loading('Please wait for staking')
 
     const result = await StakingProcess({
       stakingAmount: stakingAmount,
       lockTime: LockTime,
-      ticker: "DDDF",
+      ticker: "xODI",
     });
 
     console.log("staking is ended!!! ===========>");
@@ -117,7 +117,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              {catagory}
+              $ODI
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">
@@ -199,7 +199,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              {catagory}
+              $ODI
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">
