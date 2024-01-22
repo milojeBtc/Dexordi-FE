@@ -2,11 +2,27 @@ import React, { useState, useRef, useEffect } from "react";
 
 import { useUserContext } from "../context/loadingContext";
 
-import { StakingProcess, StakingCbrcProcess, UnstakingProcess } from "../middleware/process";
+import {
+  StakingProcess,
+  // StakingCbrcProcess,
+  UnstakingProcess,
+} from "../middleware/process";
 
 import { checkPotentialReward, claimReward } from "../middleware/db";
 
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
+
+const proxyCatagory = {
+  xODI: "brc",
+  MEME: "odi",
+  LIGO: "a",
+};
+
+const proxyCatagoryFunc = (cata: string) => {
+  if (cata == "xODI") return "brc";
+  else if (cata == "MEME") return "odi";
+  else if (cata == "LIGO") return "a";
+};
 
 interface StakeFormPanel {
   catagory: string;
@@ -24,7 +40,6 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
   const [potentialAReward, setPotentialAReward] = useState(0);
 
   const stakingBrcHandler = async () => {
-
     console.log("refer value ==> ", stakingRef.current);
     console.log(
       "refer value ==> ",
@@ -32,11 +47,11 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     );
     const stakingAmount = stakingRef.current ? stakingRef.current["value"] : "";
     if (stakingAmount == "") {
-        toast.error('Please insert staking Amount')
+      toast.error("Please insert staking Amount");
       console.log("Please insert staking Amount");
       return;
     } else if (LockTime == -1) {
-        toast.error('Please insert lockTime Amount')
+      toast.error("Please insert lockTime Amount");
       console.log("Please insert lockTime Amount");
       return;
     }
@@ -46,30 +61,47 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     const result = await StakingProcess({
       stakingAmount: stakingAmount,
       lockTime: LockTime,
-      ticker: "xODI",
+      ticker: "$ODI",
+      // ticker: "DDDF",
+      catagory
     });
 
-    console.log("staking is ended!!! ===========>");
-    console.log("result ===========>", result);
+    if (result == true) {
+      console.log("staking is ended!!! ===========>");
+      console.log("result ===========>", result);
 
-    setLoading(false);
-    toast.pause();
-    toast.success('Successfully staked!!')
+      setLoading(false);
+      toast.pause();
+      toast.success("Successfully staked!!");
+    }
   };
 
   const claimRewardFunc = async () => {
-    await claimReward({
-        tokenType: catagory
-    });
-    toast.success('Claim Reward Successfully!!')
-    setPotentialBrcReward(0);
-  }
+    if (potentialBrcReward == 0) {
+      toast.warn("There is no Reward!!");
+    } else {
+      // let temp = proxyCatagoryFunc(catagory);
+      // console.log("claimReward ==> ", temp);
+      // if (typeof temp == "string")
+        await claimReward({
+          tokenType: catagory,
+        });
+      toast.success("Claim Reward Successfully!!");
+      setPotentialBrcReward(0);
+    }
+  };
 
   const unstakingFunc = async () => {
-    UnstakingProcess({
-        tokenType: catagory
-    });
-  }
+    // let temp = proxyCatagoryFunc(catagory);
+    // console.log("unstaknig token type ==> ", temp);
+    // if (typeof temp == "string")
+      await UnstakingProcess({
+        tokenType: catagory,
+      });
+    toast.success("Unstaking Successfully!!");
+    setPotentialBrcReward(0);
+    // await claimRewardFunc();
+  };
 
   const brcCheck = async () => {
     let temp = await checkPotentialReward({
@@ -78,7 +110,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     setPotentialBrcReward(temp);
   };
 
-  const bordCheck = async () => {
+  const odiCheck = async () => {
     let temp = await checkPotentialReward({
       tokenType: "odi",
     });
@@ -95,9 +127,12 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
   };
 
   useEffect(() => {
-    if(catagory == 'BRC') brcCheck();
-    if(catagory == 'ODI') bordCheck();
-    if(catagory == 'A') aCheck();
+    if (proxyCatagoryFunc(catagory) == "brc") brcCheck();
+    if (proxyCatagoryFunc(catagory) == "odi") odiCheck();
+    if (proxyCatagoryFunc(catagory) == "a") aCheck();
+
+    if (catagory == "MEME") odiCheck();
+    if (catagory == "LIGO") aCheck();
   }, []);
 
   return (
@@ -214,7 +249,10 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
           </div>
         </div>
         {/* Button */}
-        <div className="w-full mt-auto mx-auto py-[14px] px-[53px] rounded-[55px] my-6 cursor-pointer bg-[#1a754f]" onClick={() => unstakingFunc()}>
+        <div
+          className="w-full mt-auto mx-auto py-[14px] px-[53px] rounded-[55px] my-6 cursor-pointer bg-[#1a754f]"
+          onClick={() => unstakingFunc()}
+        >
           <p className="text-white text-center font-DM-Sans text-[20px] font-bold">
             Unstaking
           </p>
@@ -252,7 +290,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
         {/* Button */}
         <div
           className="w-full mt-auto mx-auto py-[14px] px-[53px] rounded-[55px] my-6 cursor-pointer bg-[#6e7719]"
-            onClick={() => claimRewardFunc()}
+          onClick={() => claimRewardFunc()}
         >
           <p className="text-white text-center font-DM-Sans text-[20px] font-bold">
             Claim

@@ -3,7 +3,7 @@ import { TransferInscrioption } from "../middleware/dexordi";
 
 import { useUserContext } from "../context/loadingContext";
 
-import { StakingProcess, StakingCbrcProcess } from "../middleware/process";
+import { StakingProcess } from "../middleware/process";
 
 interface StakeFormProps {
   catagory: string;
@@ -29,7 +29,8 @@ export default function StakeFormComp({ catagory }: StakeFormProps) {
     const result = await StakingProcess({
       stakingAmount: stakingAmount,
       lockTime: LockTime,
-      ticker: "xODI"
+      ticker: "xODI",
+      catagory
     });
 
     console.log('staking is ended!!! ===========>');
@@ -39,34 +40,34 @@ export default function StakeFormComp({ catagory }: StakeFormProps) {
 
   }
 
-  const stakingCbrcHandler = async () => {
-    console.log('refer value ==> ', stakingRef.current ? stakingRef.current["value"] : '');
-    const stakingAmount = stakingRef.current ? stakingRef.current["value"] : '';
-    if(stakingAmount == ''){
-      console.log('Please insert staking Amount');
-      return;
-    } else if(LockTime == -1) {
-      console.log('Please insert lockTime Amount');
-      return;
-    }
+  // const stakingCbrcHandler = async () => {
+  //   console.log('refer value ==> ', stakingRef.current ? stakingRef.current["value"] : '');
+  //   const stakingAmount = stakingRef.current ? stakingRef.current["value"] : '';
+  //   if(stakingAmount == ''){
+  //     console.log('Please insert staking Amount');
+  //     return;
+  //   } else if(LockTime == -1) {
+  //     console.log('Please insert lockTime Amount');
+  //     return;
+  //   }
 
-    const result = await StakingCbrcProcess({
-      stakingAmount: stakingAmount,
-      lockTime: LockTime * 30,
-      ticker: catagory 
-    });
+  //   const result = await StakingCbrcProcess({
+  //     stakingAmount: stakingAmount,
+  //     lockTime: LockTime * 30,
+  //     ticker: catagory 
+  //   });
 
 
 
-    setLoading(false);
-  }
+  //   setLoading(false);
+  // }
 
   const stakingHandler = () => {
     setLoading(true);
     if (catagory == 'ODI'){
       stakingBrcHandler();
     } else {
-      stakingCbrcHandler();
+      // stakingCbrcHandler();
     }
   }
 

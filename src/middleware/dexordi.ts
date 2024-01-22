@@ -65,7 +65,7 @@ interface BroadcastingProps {
 }
 
 interface UnstakingArr {
-  params: string[];
+  params: number;
 }
 
 export const GetInscribeId = async (orderId: string) => {
@@ -81,9 +81,11 @@ export const GetInscribeId = async (orderId: string) => {
 };
 
 export const GetUtxoId = async (inscribeId: string) => {
+  console.log("inscribeId in GetUxoId ==> ", inscribeId)
   const payload = await axios.post(`http://localhost:8080/api/cbrc/getUtxoId`, {
     inscribeId,
   });
+  console.log("Fianl Result in GetUtxoId ==> ", payload);
   return payload.data.result;
 };
 
@@ -105,7 +107,7 @@ export const TransferInscrioption = async ({
     devAddress: receiveAddress,
     devFee: 0,
     brc20Ticker: ticker,
-    brc20Amount: amount,
+    brc20Amount: amount.toString(),
   };
 
   console.log('params in transfer ==> ', params);
@@ -121,7 +123,8 @@ export const TransferInscrioption = async ({
   console.log("payaddress ==> ", payload.data);
 
   console.log("transferInscription ==> ", payload.data);
-  return payload.data;
+
+  return payload.data
 };
 //Staking 2
 export const SendBTC = async ({
@@ -212,18 +215,64 @@ export const Unstaking = async ({ params }: UnstakingArr) => {
     },
   };
 
-  params.map((value) => {
-    // const qs = require("qs");
-    // const where = qs.stringify({ where: { id: params } });
+    console.log('ready to unstake!!!!!!!!!!!!!!!!!!!!!!')
+    const qs = require("qs");
+    const where = qs.stringify({ where: { id: params } });
 
-    // const payload = axios.post(
-    //   `${DEEP_LAKE_REST_API_URL}/flows/execute?${where}`,
-    //   { data },
-    //   { headers }
-    // );
+    console.log("URL ==> ", where);
+    console.log("payload ==> ", data);
 
-    console.log(" Unstaking ID[] ==> ", params);
-  });
+    const payload = await axios.post(
+      `${DEEP_LAKE_REST_API_URL}/flows/execute?${where}`,
+      { data },
+      { headers }
+    );
+
+    const txArr = payload.data.flowEscrows[1].escrow.transactions;
+
+    console.log('txArr in unstaking ==> ', txArr);
+
+    let txHex = '';
+
+    txArr.map((value:any) => {
+      if(value.module == 'btc'){
+        console.log("FInd the txHex !!!!!!!!!!!!!! ")
+        txHex = value.hex;
+      }
+    })
+
+    console.log('payload in unstaking ==> ', txHex);
+
+    console.log(" Unstaking ID !!!!!!!!!!! ==> ", params);
+
+    return txHex;
+};
+
+export const UnstakeBroadcasting = async ({
+  escrowId,
+  signedHex,
+}: BroadcastingProps) => {
+  const qs = require("qs");
+  const headers = { Authorization: MY_COMPANY_API_KEY };
+  const data = {
+    state: "broadcast-unstake",
+    transactions: [
+      {
+        hex: signedHex,
+      },
+    ],
+    product: {
+      id: 14,
+    },
+  };
+  const where = qs.stringify({ where: { id: escrowId } });
+  const payload = await axios.post(
+    `${DEEP_LAKE_REST_API_URL}/flows/execute?${where}`,
+    { data },
+    { headers }
+  );
+
+  return payload.data;
 };
 
 // export const Staking = async (params: StakingProps) => {

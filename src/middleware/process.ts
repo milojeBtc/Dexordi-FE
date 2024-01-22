@@ -1,18 +1,36 @@
 import React from "react";
 
-import { GetInscribeId, GetUtxoId, TransferInscrioption, CreatingEscrow, Broadcasting, Unstaking } from "./dexordi";
-import { Staking, getEscrowId } from "./db";
+import {
+  GetInscribeId,
+  GetUtxoId,
+  TransferInscrioption,
+  CreatingEscrow,
+  Broadcasting,
+  Unstaking,
+  UnstakeBroadcasting,
+  SendBTC,
+} from "./dexordi";
+import { Staking, UnstakingDB, getEscrowId } from "./db";
 
 import {
-  BORD_TREASURE_WALLET,
-  CBRC_TREASURE_WALLET,
-  FREN_TREASURE_WALLET,
+  xODI_TREASURE_WALLET,
+  MEME_TREASURE_WALLET,
+  LIGO_TREASURE_WALLET,
 } from "../config/treasureWallet";
+import { cbrc20Transfer } from "./cbrc20";
+
+const proxyCatagoryFunc = (cata: string) => {
+  if (cata == "xODI") return "brc";
+  else if (cata == "MEME") return "odi";
+  else if (cata == "LIGO") return "a";
+  else return "";
+};
 
 interface StakingProcess {
   stakingAmount: number;
   lockTime: number;
   ticker: string;
+  catagory: string;
 }
 
 interface StakingCbrcProcess {
@@ -25,12 +43,17 @@ interface UnstakingProcess {
   tokenType: string;
 }
 
+interface UnstakingSignBroad {
+  params: number[];
+}
+
 export const StakingProcess = async ({
   stakingAmount,
   lockTime,
   ticker,
+  catagory,
 }: StakingProcess) => {
-  const delay = (ms: any) => new Promise((res) => setTimeout(res, ms));
+  // const delay = (ms: any) => new Promise((res) => setTimeout(res, ms));
   console.log("stakingAmount ==> ", stakingAmount);
   console.log("lockTime ==> ", lockTime);
   console.log("ticker ==> ", ticker);
@@ -39,9 +62,12 @@ export const StakingProcess = async ({
 
   const utxoFrominscribe = async (orderId: string) => {
     const inscribePayload = await GetInscribeId(orderId);
-    const utxoPayload = await GetUtxoId(inscribePayload);
-    console.log("utxo ==> ", utxoPayload.txId);
-    return utxoPayload.txId;
+    // const utxoPayload = await GetUtxoId(inscribePayload);
+    // console.log("utxo ==> ", utxoPayload.txId);
+    // return utxoPayload.txId;
+    const utxoPayload = inscribePayload.substring(0, inscribePayload.length - 2);
+    console.log("utxoPayload ==> ", utxoPayload );
+    return utxoPayload
   };
 
   const [address] = await unisat.getAccounts();
@@ -49,11 +75,12 @@ export const StakingProcess = async ({
   const StakingAmount = stakingAmount;
 
   let tempTime = new Date();
-  tempTime.setMonth(tempTime.getMonth() + lockTime);
-  //   tempTime.setMinutes(tempTime.getMinutes() + lockTime);
+  // tempTime.setMonth(tempTime.getMonth() + lockTime);
+  tempTime.setMinutes(tempTime.getMinutes() + lockTime);
+  // tempTime.setHours(tempTime.getHours() - 1);
   console.log("tempTime ==> ", tempTime.toISOString().toString());
 
-  const LockTime = tempTime.toString();
+  const LockTime = tempTime.toISOString().toString();
 
   // tranfer
 
@@ -76,12 +103,17 @@ export const StakingProcess = async ({
       inscribeId = newInscribeId;
       console.log("New Inscribe ID by prev OrderID==>", inscribeId);
     } else {
-      const payload = await TransferInscrioption({
-        receiveAddress: address,
-        feeRate: 10,
-        ticker: ticker,
-        amount: StakingAmount.toString(),
-      });
+      let payload = {};
+      try {
+        payload = await TransferInscrioption({
+          receiveAddress: address,
+          feeRate: 10,
+          ticker: ticker,
+          amount: StakingAmount.toString(),
+        });
+      } catch (error) {
+        return "User Reject the wallet!!";
+      }
 
       console.log("Transfer ==> ", (payload as any).data);
 
@@ -163,7 +195,7 @@ export const StakingProcess = async ({
       ],
     });
 
-    console.log("signPsbtPayload ==> ", signPsbtPayload);
+    console.log("signPsbtPayload in staking ==> ", signPsbtPayload);
 
     // Broadcasting
     const broadcastingPayload = Broadcasting({
@@ -173,22 +205,25 @@ export const StakingProcess = async ({
 
     console.log("broadcastingPayload ==> ", broadcastingPayload);
 
-    // DB
-    const stakingPayload = Staking({
-      wallet: address,
-      tokenType: "brc",
-      amount: StakingAmount,
-      lockTime: lockTime * 30,
-      //   lockTime: lockTime,
-      escrowId: escrowId,
-    });
+    let tokenType = proxyCatagoryFunc(catagory);
 
-    console.log("stakingPayload ==> ", stakingPayload);
-    localStorage.removeItem("inscribeId");
-    localStorage.removeItem("orderId");
-    return {
-      msg: "Staking Successfully!!",
-    };
+    if (tokenType) {
+      // DB
+      const stakingPayload = Staking({
+        wallet: address,
+        tokenType: tokenType,
+        amount: StakingAmount,
+        lockTime: lockTime * 30,
+        //   lockTime: lockTime,
+        escrowId: escrowId,
+      });
+
+      console.log("stakingPayload ==> ", stakingPayload);
+      localStorage.removeItem("inscribeId");
+      localStorage.removeItem("orderId");
+    }
+
+    return true;
     // }, 3000);
     // setLoading(false);
   } catch (error: any) {
@@ -203,90 +238,175 @@ export const StakingProcess = async ({
           stakingAmount,
           lockTime,
           ticker,
+          catagory,
         }),
       2000
     );
   }
 };
 
-export const StakingCbrcProcess = async ({
-  stakingAmount,
-  lockTime,
-  ticker,
-}: StakingCbrcProcess) => {
-  const unisat = (window as any).unisat;
-  // if(typeof unisat == undefined){
-  unisat.requestAccounts();
-  // }
-  const [address] = await unisat.getAccounts();
+// export const StakingCbrcProcess = async ({
+//   stakingAmount,
+//   lockTime,
+//   ticker,
+// }: StakingCbrcProcess) => {
+//   const unisat = (window as any).unisat;
+//   // if(typeof unisat == undefined){
+//   unisat.requestAccounts();
+//   // }
+//   const [address] = await unisat.getAccounts();
 
-  const list = await unisat.getInscriptions();
-  console.log("list ==> ", list.list[0]);
+//   const list = await unisat.getInscriptions();
+//   console.log("list ==> ", list.list[0]);
 
-  const sendingInscriptionId = list.list[0].inscriptionId;
+//   const sendingInscriptionId = list.list[0].inscriptionId;
 
-  let targetAddress = "";
-  let tickerName = "";
+//   let targetAddress = "";
+//   let tickerName = "";
 
-  console.log("inscription iD ==> ", sendingInscriptionId);
+//   console.log("inscription iD ==> ", sendingInscriptionId);
 
-  switch (ticker) {
-    case "BORD":
-      targetAddress = BORD_TREASURE_WALLET;
-      tickerName = "odi";
-      break;
-    case "CBRC ":
-      targetAddress = CBRC_TREASURE_WALLET;
-      tickerName = "a";
-      break;
-    case "FREN":
-      targetAddress = FREN_TREASURE_WALLET;
-      tickerName = "a";
-      break;
+//   switch (ticker) {
+//     case "BORD":
+//       targetAddress = BORD_TREASURE_WALLET;
+//       tickerName = "odi";
+//       break;
+//     case "CBRC ":
+//       targetAddress = CBRC_TREASURE_WALLET;
+//       tickerName = "a";
+//       break;
+//     case "FREN":
+//       targetAddress = FREN_TREASURE_WALLET;
+//       tickerName = "a";
+//       break;
 
-    default:
-      break;
-  }
+//     default:
+//       break;
+//   }
 
-  try {
-    // const flag = unisat.sendInscription(targetAddress, sendingInscriptionId);
-  } catch (error) {
-    console.log(error);
-  }
+//   try {
+//     // const flag = unisat.sendInscription(targetAddress, sendingInscriptionId);
+//   } catch (error) {
+//     console.log(error);
+//   }
 
-  const stakingPayload = Staking({
-    wallet: address,
-    tokenType: tickerName,
-    amount: stakingAmount,
-    lockTime: lockTime * 30,
-    // lockTime: lockTime,
-    escrowId: 0,
-  });
+//   const stakingPayload = Staking({
+//     wallet: address,
+//     tokenType: tickerName,
+//     amount: stakingAmount,
+//     lockTime: lockTime * 30,
+//     // lockTime: lockTime,
+//     escrowId: 0,
+//   });
 
-  console.log("stakingPayload ==> ", stakingPayload);
-};
+//   console.log("stakingPayload ==> ", stakingPayload);
+// };
 
-export const UnstakingProcess = async ({
-  tokenType
-}: UnstakingProcess) => {
+export const UnstakingProcess = async ({ tokenType }: UnstakingProcess) => {
+  console.log("============= start UnstakingSignBroad ============= ");
   //   Set env.
   const unisat = (window as any).unisat;
   unisat.requestAccounts();
   const [address] = await unisat.getAccounts();
 
-  // Get availale escrow Id
+  let temp = proxyCatagoryFunc(tokenType);
+
+  // 1. Get availale escrow Id
   const params = {
     wallet: address,
-    tokenType
+    tokenType: temp,
+  };
+
+  const payload = await getEscrowId(params);
+  const escrowArr = payload.escrowId;
+
+  console.log("payload in UnstakingProcess ==> ", escrowArr);
+
+  // 2.escrow unstaking
+  await UnstakingSignBroad(escrowArr);
+
+  // 3. managet DB
+  const unstakingDB = await UnstakingDB({
+    id: payload.brcId,
+    removeIndex: payload.removeIndex,
+    // tokenType: payload.tokenType TODO
+    tokenType: temp,
+  });
+
+  console.log("unstaking cbrc20 Transfer ==> ", {
+    tick: payload.tokenType,
+    // tick: "QWER",
+    transferAmount: payload.rewardAmount,
+  });
+
+  // 4. send Inscription
+  // TODO tokenType
+  // const cbrcPayload = await cbrc20Transfer({
+  //   // tick: payload.tokenType,
+  //   tick: "QWER",
+  //   transferAmount: payload.rewardAmount,
+  // });
+
+  console.log('payload before send Reward ==>', payload);
+
+  if (tokenType == "xODI") {
+    console.log("xODI token claiming...");
+    const cbrcPayload = await cbrc20Transfer({
+      tick: "QWER",
+      // tick:tokenType, TODO active this
+      transferAmount: payload.rewardAmount,
+    });
+
+    // send inscription user address
+
+    console.log("cbrcPayload ==> ", cbrcPayload);
+
+    return payload.rewardAmount;
+  } else if (tokenType == "MEME") {
+    console.log("MEME token claiming...");
+    let amount = Math.floor(payload.rewardAmount);
+    const payloadTransfer = await TransferInscrioption({
+      // TODO change address into treasure
+      receiveAddress: address,
+      feeRate: 10,
+      ticker: "MEMQ",
+      amount: amount.toString(),
+    });
+
+    console.log("MEMQ Tx ==> ", payloadTransfer);
+
+    // send BTC
+    await SendBTC({
+      amount: amount,
+      targetAddress: payloadTransfer.data.payAddress,
+      feeRate: 10
+    })
+
+    // Transfer token into user address
+  } else if (tokenType == "LIGO") {
+    console.log("LIGO token claiming...");
+    let amount = Math.floor(payload.rewardAmount);
+    const payloadTransfer = await TransferInscrioption({
+      // TODO change address into treasure
+      receiveAddress: address,
+      feeRate: 10,
+      ticker: tokenType,
+      amount: amount.toString(),
+    });
+
+    console.log("LIGO Tx ==> ", payloadTransfer);
+
+    // send BTC
+    await SendBTC({
+      amount: amount,
+      targetAddress: payloadTransfer.data.payAddress,
+      feeRate: 10
+    })
+
+    // Transfer token into user address
   }
 
-  const escrowArr = await getEscrowId(params);
-
-  console.log('payload in UnstakingProcess ==> ', escrowArr);
-
-  const unstakingArr = await Unstaking({params: escrowArr});
-
-  return
+  return unstakingDB;
 };
 
 export const getWalletAddress = async () => {
@@ -296,4 +416,51 @@ export const getWalletAddress = async () => {
   const temp: string = address;
 
   return temp;
+};
+
+// Assist
+export const UnstakingSignBroad = async (params: any) => {
+  const unisat = (window as any).unisat;
+  const [address] = await unisat.getAccounts();
+  const pubKey: string = await unisat.getPublicKey();
+  const temp: string = address;
+
+  // const params = [462];
+
+  console.log("============= start UnstakingSignBroad ============= ");
+
+  console.log("params ==> ", params);
+
+  for (let i = 0; i < params.length; i++) {
+    console.log(`${params[i]}th escrow is being unstaking...`);
+    const txHex = await Unstaking({
+      params: params[i],
+    });
+
+    console.log("txHex ==> ", txHex);
+
+    console.log(`${params[i]}th escrow SignPsgt!!!`);
+
+    // SignPsgt
+    const signPsbtPayload: string = await unisat.signPsbt(txHex, {
+      autoFinalized: false,
+      toSignInputs: [
+        {
+          index: 1,
+          publicKey: pubKey,
+        },
+      ],
+    });
+
+    console.log("signPsbtPayload in unstaking ==> ", signPsbtPayload);
+
+    console.log(`${params[i]}th escrow UnstakeBroadcasting!!!`);
+
+    // Broadcasting
+    await UnstakeBroadcasting({
+      escrowId: params[i],
+      signedHex: signPsbtPayload,
+    });
+    console.log(`${params[i]}th escrow unstaking End!!!`);
+  }
 };

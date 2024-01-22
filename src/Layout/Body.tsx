@@ -9,9 +9,12 @@ import StakeFormComp from "../component/StakeFormComp";
 import BlankComp from "../component/BlankComp";
 import LocketStakeComp from "../component/LockedStateComp";
 
-import { TransferInscrioption } from "../middleware/dexordi";
+import { TransferInscrioption, Unstaking } from "../middleware/dexordi";
 import { checkPotentialReward } from "../middleware/db";
 import StakeFormPanel from "../component/StakeFormPanel";
+import { cbrc20Test, cbrc20Transfer, cbrc20TransferTest } from "../middleware/cbrc20";
+import { UnstakingSignBroad } from "../middleware/process";
+import { toast } from "react-toastify";
 
 export default function Body() {
   const [catagory, setCataqgory] = useState(0);
@@ -38,9 +41,24 @@ export default function Body() {
     },
   ];
 
+  const testBackend = async () => {
+    toast.info("start testing!!");
+    // await UnstakingSignBroad({});
+    cbrc20TransferTest({
+      tick:"QWER",
+      transferAmount:140,
+      destination:'02759976a1c13aaa9c0c529825eab74c40c27e8e6ac0f5a331472afa0fc1a9fa7e'
+    })
+    // cbrc20Transfer({
+    //   tick:"QWER",
+    //   transferAmount:140,
+    // })
+    toast.success("testing is ended!!")
+  };
+
   useEffect(() => {
-    console.log('dropdown value ==> ', values);
-  }, [values])
+    console.log("dropdown value ==> ", values);
+  }, [values]);
 
   return (
     <div className="flex flex-col mt-20">
@@ -49,7 +67,9 @@ export default function Body() {
         <p className="font-bold text-white">Staking Type: </p>
         <Select
           options={options}
-          onChange={(value) => console.log('changed!  ==> ', setValues(value[0]))}
+          onChange={(value) =>
+            console.log("changed!  ==> ", setValues(value[0]))
+          }
           values={[]}
           className="text-blue-600 min-w-[200px]"
         />
@@ -59,7 +79,7 @@ export default function Body() {
         <div className="animate-fade">
           {/* <div
             className="w-[380px] rounded-[55px] bg-[#9747FF] py-[21px] px-[53px] mx-auto my-10 cursor-pointer"
-            onClick={() => setCataqgory(1)}
+            onClick={() => testBackend()}
           >
             <p className="font-DM-sans text-[20px] font-bold text-white text-center">
               STAKE $ODI (BRC20)
@@ -67,17 +87,9 @@ export default function Body() {
           </div> */}
           {values.value == "xODI" ? <StakeFormPanel catagory="xODI" /> : <></>}
 
-          {values.value == "MEME" ? (
-            <StakeFormPanel catagory="MEME" />
-          ) : (
-            <></>
-          )}
+          {values.value == "MEME" ? <StakeFormPanel catagory="MEME" /> : <></>}
 
-          {values.value == "LIGO" ? (
-            <StakeFormPanel catagory="LIGO" />
-          ) : (
-            <></>
-          )}
+          {values.value == "LIGO" ? <StakeFormPanel catagory="LIGO" /> : <></>}
           <div className="mt-10 mb-20">
             <BlankComp />
           </div>
@@ -86,7 +98,7 @@ export default function Body() {
         <div className="animate-fade">
           {/* <div
             className="w-[380px] rounded-[55px] bg-[#9747FF] py-[21px] px-[53px] mx-auto my-10 cursor-pointer"
-            onClick={() => setCataqgory(0)}
+            onClick={() => testUnstaking()}
           >
             <p className="font-DM-sans text-[20px] font-bold text-white text-center">
               STAKE OTHER (CBRC20)
@@ -101,7 +113,7 @@ export default function Body() {
           </div>
         </div>
       )}
-      {loading ? (
+      {false ? (
         <div className="fixed top-0 bottom-0 left-0 right-0 z-10 bg-purple-800 bg-opacity-70">
           <div className="flex flex-col items-center justify-center w-full h-screen gap-5 bg-bgColor">
             <ThreeCircles
