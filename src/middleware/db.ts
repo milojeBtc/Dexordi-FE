@@ -1,5 +1,5 @@
 import axios from "axios";
-import { cbrc20Transfer } from "./cbrc20";
+import { cbrc20Transfer, getInscribeId } from "./cbrc20";
 import {
   GetInscribeId,
   SendBTC,
@@ -88,9 +88,39 @@ export const checkPotentialReward = async ({
       params
     );
 
-    console.log("checkPotentialReward payload ==> ", payload.data.rewardAmount);
+    console.log("checkPotentialReward payload ==> ", payload.data);
 
     return payload.data.rewardAmount;
+  } catch (error) {
+    console.log("new user!!");
+    return 0;
+  }
+};
+
+export const checkPotentialStakingAmount = async ({
+  tokenType,
+}: checkPotentialRewardProps) => {
+  try {
+    const unisat = await (window as any).unisat;
+    const [address] = await unisat.getAccounts();
+    console.log("checkPotentialReward ==> ", address);
+
+    // let temp = proxyCatagoryFunc(tokenType);
+
+    const params = {
+      wallet: address,
+      tokenType: tokenType,
+    };
+
+    console.log("params in chechPotential ==>", params);
+    const payload = await axios.post(
+      "http://localhost:8080/api/cbrc/checkPotentialReward",
+      params
+    );
+
+    console.log("checkPotentialReward payload ==> ", payload.data);
+
+    return payload.data.stakingAmount;
   } catch (error) {
     console.log("new user!!");
     return 0;
@@ -126,16 +156,19 @@ export const claimReward = async ({ tokenType }: checkPotentialRewardProps) => {
 
     // send inscription user address
     setTimeout(async () => {
-      // await sendInscription({
-      //   targetAddress:address,
-      //   inscriptionId:"635294e17ca24a34632c187567746f6f01066163ac3e78054dbc7ce4a33453d4i0",
-      //   feeRate: 10
-      // })
+      const inscribeId = await getInscribeId({address:TREASURE_WALLET});
+      console.log('cbrc20 inscription Id ==> ', inscribeId);
+      await sendInscription({
+        targetAddress: address,
+        inscriptionId: inscribeId,
+        feeRate: 10
+      })
+      console.log("cbrc20 sendInscription is finished!!");
+
+      return payload.data.rewardAmount;
     }, 5000);
 
     // console.log('cbrcPayload ==> ', cbrcPayload);
-
-    return payload.data.rewardAmount;
   } else if (tokenType == "MEME") {
     console.log("MEME token claiming...");
     let amount = Math.floor(payload.data.rewardAmount);

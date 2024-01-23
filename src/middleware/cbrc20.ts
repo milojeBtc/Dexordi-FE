@@ -11,6 +11,10 @@ interface cbrc20TransferProps2 {
     destination:string
 }
 
+interface getInscribeIdProps {
+    address:string
+}
+
 export const cbrc20Test = async () => {
     const payload = await axios.get("http://localhost:8081/", {});
 
@@ -58,4 +62,14 @@ export const cbrc20TransferTest = async ({
 
     console.log("CBRC20 Test ==> ", payload)
     return payload;
+}
+
+export const getInscribeId = async({
+    address
+}:getInscribeIdProps) => {
+    const inscribeId = await axios.post("http://localhost:8080/api/cbrc/getAddressInscriptions", {
+        address
+    })
+
+    return inscribeId.data.result.list[0].inscriptionId;
 }

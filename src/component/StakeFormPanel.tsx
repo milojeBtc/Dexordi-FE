@@ -8,7 +8,7 @@ import {
   UnstakingProcess,
 } from "../middleware/process";
 
-import { checkPotentialReward, claimReward } from "../middleware/db";
+import { checkPotentialReward, checkPotentialStakingAmount, claimReward } from "../middleware/db";
 
 import { toast } from "react-toastify";
 
@@ -36,6 +36,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
   const { loading, setLoading, connected } = useUserContext();
 
   const [potentialBrcReward, setPotentialBrcReward] = useState(0);
+  const [potentialBrcAmount, setPotnetialBrcAmount] = useState(0)
   const [potentialBordReward, setPotentialBordReward] = useState(0);
   const [potentialAReward, setPotentialAReward] = useState(0);
 
@@ -108,16 +109,17 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     // console.log("unstaknig token type ==> ", temp);
     // if (typeof temp == "string")
 
-    if(connected == false){
-      toast.warn("Please connect wallet first");
-      return
-    }
+    // if(connected == false){
+    //   toast.warn("Please connect wallet first");
+    //   return
+    // }
 
       await UnstakingProcess({
         tokenType: catagory,
       });
     toast.success("Unstaking Successfully!!");
     setPotentialBrcReward(0);
+    setPotnetialBrcAmount(0)
     // await claimRewardFunc();
   };
 
@@ -126,6 +128,12 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
       tokenType: "brc",
     });
     setPotentialBrcReward(temp);
+
+    let stakingAmount = await checkPotentialStakingAmount({
+      tokenType: "brc",
+    })
+    setPotnetialBrcAmount(stakingAmount)
+    
   };
 
   const odiCheck = async () => {
@@ -134,6 +142,11 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     });
     // setPotentialBordReward(temp);
     setPotentialBrcReward(temp);
+
+    let stakingAmount = await checkPotentialStakingAmount({
+      tokenType: "odi",
+    })
+    setPotnetialBrcAmount(stakingAmount)
   };
 
   const aCheck = async () => {
@@ -142,6 +155,11 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     });
     // setPotentialBordReward(temp);
     setPotentialBrcReward(temp);
+
+    let stakingAmount = await checkPotentialStakingAmount({
+      tokenType: "a",
+    })
+    setPotnetialBrcAmount(stakingAmount)
   };
 
   useEffect(() => {
@@ -258,7 +276,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">
             <input
               className="w-7/12 text-black text-[18px] font-bold leading-[27px]"
-              value={potentialBrcReward}
+              value={potentialBrcAmount}
               disabled={true}
             />
             <p className="w-5/12 text-[#C3C3C3] text-right font-DM-sans text-[18px] font-bold">
