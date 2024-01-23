@@ -59,7 +59,7 @@ export const Staking = ({
   };
 
   const stakingPayload = axios.post(
-    "http://localhost:8080/api/cbrc/staking",
+    "http://194.99.22.13:8080/api/cbrc/staking",
     params
   );
 
@@ -84,7 +84,7 @@ export const checkPotentialReward = async ({
 
     console.log("params in chechPotential ==>", params);
     const payload = await axios.post(
-      "http://localhost:8080/api/cbrc/checkPotentialReward",
+      "http://194.99.22.13:8080/api/cbrc/checkPotentialReward",
       params
     );
 
@@ -114,7 +114,7 @@ export const checkPotentialStakingAmount = async ({
 
     console.log("params in chechPotential ==>", params);
     const payload = await axios.post(
-      "http://localhost:8080/api/cbrc/checkPotentialReward",
+      "http://194.99.22.13:8080/api/cbrc/checkPotentialReward",
       params
     );
 
@@ -138,7 +138,7 @@ export const claimReward = async ({ tokenType }: checkPotentialRewardProps) => {
   };
 
   const payload = await axios.post(
-    "http://localhost:8080/api/cbrc/claimReward",
+    "http://194.99.22.13:8080/api/cbrc/claimReward",
     params
   );
 
@@ -271,12 +271,12 @@ export const claimReward = async ({ tokenType }: checkPotentialRewardProps) => {
 //     tokenType:tokenType
 //   }
 
-//   const payload = await axios.post("http://localhost:8080/api/cbrc/claimReward", params);
+//   const payload = await axios.post("http://194.99.22.13:8080/api/cbrc/claimReward", params);
 // }
 
 export const getEscrowId = async (params: getEscrowId) => {
   const payload = await axios.post(
-    "http://localhost:8080/api/cbrc/unstaking",
+    "http://194.99.22.13:8080/api/cbrc/unstaking",
     params
   );
   console.log("unstaking available esocrow id ==> ", payload.data.escrowId);
@@ -288,7 +288,7 @@ export const UnstakingDB = async (params: UnstakingDBProps) => {
   console.log("UnstakingDB ==> ", params);
 
   const payload = await axios.post(
-    "http://localhost:8080/api/cbrc/unstakingDB",
+    "http://194.99.22.13:8080/api/cbrc/unstakingDB",
     params
   );
 

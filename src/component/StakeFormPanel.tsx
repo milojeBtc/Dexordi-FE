@@ -96,9 +96,9 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
       // let temp = proxyCatagoryFunc(catagory);
       // console.log("claimReward ==> ", temp);
       // if (typeof temp == "string")
-        await claimReward({
-          tokenType: catagory,
-        });
+      await claimReward({
+        tokenType: catagory,
+      });
       toast.success("Claim Reward Successfully!!");
       setPotentialBrcReward(0);
     }
@@ -114,9 +114,9 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     //   return
     // }
 
-      await UnstakingProcess({
-        tokenType: catagory,
-      });
+    await UnstakingProcess({
+      tokenType: catagory,
+    });
     toast.success("Unstaking Successfully!!");
     setPotentialBrcReward(0);
     setPotnetialBrcAmount(0)
@@ -133,7 +133,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
       tokenType: "brc",
     })
     setPotnetialBrcAmount(stakingAmount)
-    
+
   };
 
   const odiCheck = async () => {
@@ -205,9 +205,8 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
         {/* Period */}
         <div className="flex flex-row gap-2 mt-12">
           <div
-            className={`flex items-center justify-center w-1/4 h-[60px] ${
-              LockTime == 1 ? "bg-[#45108A]" : "bg-[#9747FF]"
-            } cursor-pointer rounded-[30px]`}
+            className={`flex items-center justify-center w-1/4 h-[60px] ${LockTime == 1 ? "bg-[#45108A]" : "bg-[#9747FF]"
+              } cursor-pointer rounded-[30px]`}
             onClick={() => setLockTime(1)}
           >
             <p className="text-white text-center font-DM-Sans text-[15px] font-bold">
@@ -215,9 +214,8 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
             </p>
           </div>
           <div
-            className={`flex items-center justify-center w-1/4 h-[60px] ${
-              LockTime == 3 ? "bg-[#45108A]" : "bg-[#9747FF]"
-            } cursor-pointer rounded-[30px]`}
+            className={`flex items-center justify-center w-1/4 h-[60px] ${LockTime == 3 ? "bg-[#45108A]" : "bg-[#9747FF]"
+              } cursor-pointer rounded-[30px]`}
             onClick={() => setLockTime(3)}
           >
             <p className="text-white text-center font-DM-Sans text-[15px] font-bold">
@@ -225,9 +223,8 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
             </p>
           </div>
           <div
-            className={`flex items-center justify-center w-1/4 h-[60px] ${
-              LockTime == 5 ? "bg-[#45108A]" : "bg-[#9747FF]"
-            } cursor-pointer rounded-[30px]`}
+            className={`flex items-center justify-center w-1/4 h-[60px] ${LockTime == 5 ? "bg-[#45108A]" : "bg-[#9747FF]"
+              } cursor-pointer rounded-[30px]`}
             onClick={() => setLockTime(5)}
           >
             <p className="text-white text-center font-DM-Sans text-[15px] font-bold">
@@ -235,9 +232,8 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
             </p>
           </div>
           <div
-            className={`flex items-center justify-center w-1/4 h-[60px] ${
-              LockTime == 12 ? "bg-[#45108A]" : "bg-[#9747FF]"
-            } cursor-pointer rounded-[30px]`}
+            className={`flex items-center justify-center w-1/4 h-[60px] ${LockTime == 12 ? "bg-[#45108A]" : "bg-[#9747FF]"
+              } cursor-pointer rounded-[30px]`}
             onClick={() => setLockTime(12)}
           >
             <p className="text-white text-center font-DM-Sans text-[15px] font-bold">

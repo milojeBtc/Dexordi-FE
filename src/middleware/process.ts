@@ -19,7 +19,7 @@ import {
   LIGO_TREASURE_WALLET,
   TREASURE_WALLET,
 } from "../config/treasureWallet";
-import { cbrc20Transfer } from "./cbrc20";
+import { cbrc20Transfer, getInscribeId } from "./cbrc20";
 
 const proxyCatagoryFunc = (cata: string) => {
   if (cata == "xODI") return "brc";
@@ -41,13 +41,15 @@ interface StakingCbrcProcess {
   ticker: string;
 }
 
-interface UnstakingProcess {
+interface UnstakingProcessProps {
   tokenType: string;
 }
 
 interface UnstakingSignBroad {
   params: number[];
 }
+
+const timer = (ms: number) => new Promise(res => setTimeout(res, ms))
 
 
 export const StakingProcess = async ({
@@ -69,7 +71,7 @@ export const StakingProcess = async ({
     // console.log("utxo ==> ", utxoPayload.txId);
     // return utxoPayload.txId;
     const utxoPayload = inscribePayload.substring(0, inscribePayload.length - 2);
-    console.log("utxoPayload ==> ", utxoPayload );
+    console.log("utxoPayload ==> ", utxoPayload);
     return utxoPayload
   };
 
@@ -115,7 +117,8 @@ export const StakingProcess = async ({
           amount: StakingAmount.toString(),
         });
       } catch (error) {
-        return "User Reject the wallet!!";
+        console.log("User Reject the wallet!!");
+        return 
       }
 
       console.log("Transfer ==> ", (payload as any).data);
@@ -139,7 +142,11 @@ export const StakingProcess = async ({
   }
 
   try {
-    // Creating Escrow
+
+    // Creating Escrow 
+    console.log("================Delay Start==================")
+    timer(2000);
+    console.log("================Delay  Stop==================")
     const creatingEscrowInput = {
       where: {},
       data: {
@@ -305,7 +312,11 @@ export const StakingProcess = async ({
 //   console.log("stakingPayload ==> ", stakingPayload);
 // };
 
-export const UnstakingProcess = async ({ tokenType }: UnstakingProcess) => {
+export const UnstakingProcess = async ({ tokenType }: UnstakingProcessProps) => {
+  console.log("============= start UnstakingSignBroad ============= ");
+  console.log("============= start UnstakingSignBroad ============= ");
+
+
   console.log("============= start UnstakingSignBroad ============= ");
   //   Set env.
   const unisat = (window as any).unisat;
@@ -327,121 +338,137 @@ export const UnstakingProcess = async ({ tokenType }: UnstakingProcess) => {
 
   // 2.escrow unstaking
   try {
-    await UnstakingSignBroad(escrowArr);
-  } catch (error) {
-    await UnstakingSignBroad(escrowArr);
-  }
-  
+    // TODO
+    // await UnstakingSignBroad(escrowArr);
 
-  // 3. managet DB
-  const unstakingDB = await UnstakingDB({
-    id: payload.brcId,
-    removeIndex: payload.removeIndex,
-    // tokenType: payload.tokenType TODO
-    tokenType: temp,
-  });
+    // 3. managet DB
+    const unstakingDB = await UnstakingDB({
+      id: payload.brcId,
+      removeIndex: payload.removeIndex,
+      // tokenType: payload.tokenType TODO
+      tokenType: temp,
+    });
 
-  console.log("unstaking cbrc20 Transfer ==> ", {
-    tick: payload.tokenType,
-    // tick: "QWER",
-    transferAmount: payload.rewardAmount,
-  });
-
-  // 4. send Inscription
-  // TODO tokenType
-  // const cbrcPayload = await cbrc20Transfer({
-  //   // tick: payload.tokenType,
-  //   tick: "QWER",
-  //   transferAmount: payload.rewardAmount,
-  // });
-
-  console.log('payload before send Reward ==>', payload);
-
-  if (tokenType == "xODI") {
-    console.log("xODI token claiming...");
-    const cbrcPayload = await cbrc20Transfer({
-      tick: "QWER",
-      // tick:tokenType, TODO active this
+    console.log("unstaking cbrc20 Transfer ==> ", {
+      tick: payload.tokenType,
+      // tick: "QWER",
       transferAmount: payload.rewardAmount,
     });
 
-    // send inscription user address
+    // 4. send Inscription
+    // TODO tokenType
+    // const cbrcPayload = await cbrc20Transfer({
+    //   // tick: payload.tokenType,
+    //   tick: "QWER",
+    //   transferAmount: payload.rewardAmount,
+    // });
 
-    console.log("cbrcPayload ==> ", cbrcPayload);
+    console.log('payload before send Reward ==>', payload);
 
-    return payload.rewardAmount;
-  } else if (tokenType == "MEME") {
-    console.log("MEME token claiming...");
-    console.log("Payload in here ==> ", payload);
-    let amount = Math.floor(payload.rewardAmount);
-    const payloadTransfer = await TransferInscrioption({
-      // TODO change address into treasure
-      receiveAddress: TREASURE_WALLET,
-      feeRate: 10,
-      ticker: "MEMQ",
-      amount: amount.toString(),
+    if (tokenType == "xODI") {
+      console.log("xODI token claiming...");
+      const cbrcPayload = await cbrc20Transfer({
+        tick: "QWER",
+        // tick:tokenType, TODO active this
+        transferAmount: payload.rewardAmount,
+      });
+
+      setTimeout(async () => {
+        const inscribeId = await getInscribeId({ address: TREASURE_WALLET });
+        console.log('cbrc20 inscription Id ==> ', inscribeId);
+        await sendInscription({
+          targetAddress: address,
+          inscriptionId: inscribeId,
+          feeRate: 10
+        })
+        console.log("cbrc20 sendInscription is finished!!");
+
+        return true;
+      }, 5000);
+
+      // send inscription user address
+
+      console.log("cbrcPayload ==> ", cbrcPayload);
+
+      return payload.rewardAmount;
+    } else if (tokenType == "MEME") {
+      console.log("MEME token claiming...");
+      console.log("Payload in here ==> ", payload);
+      let amount = Math.floor(payload.rewardAmount);
+      const payloadTransfer = await TransferInscrioption({
+        // TODO change address into treasure
+        receiveAddress: TREASURE_WALLET,
+        feeRate: 10,
+        ticker: "MEMQ",
+        amount: amount.toString(),
+      });
+
+      console.log("MEMQ Tx ==> ", payloadTransfer);
+      const payAmount = await payloadTransfer.data.amount;
+
+      const btcPayload = await SendBTC({
+        amount: payAmount,
+        targetAddress: payloadTransfer.data.payAddress,
+        feeRate: 10,
+      });
+
+      console.log("Sent BTC ==>", btcPayload);
+
+      const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
+
+      console.log("get InscribeId ==> ", inscribeId);
+
+      const sendPayload = await sendInscription({
+        targetAddress: address,
+        inscriptionId: inscribeId,
+        feeRate: 10,
+      });
+
+      console.log("sendPayload ==> ", sendPayload);
+
+      // Transfer token into user address
+    } else if (tokenType == "LIGO") {
+      console.log("LIGO token claiming...");
+      let amount = Math.floor(payload.rewardAmount);
+      const payloadTransfer = await TransferInscrioption({
+        // TODO change address into treasure
+        receiveAddress: TREASURE_WALLET,
+        feeRate: 10,
+        ticker: "LIGO",
+        amount: amount.toString(),
+      });
+
+      console.log("LIGO Tx ==> ", payloadTransfer);
+      const payAmount = await payloadTransfer.data.amount;
+
+      const btcPayload = await SendBTC({
+        amount: payAmount,
+        targetAddress: payloadTransfer.data.payAddress,
+        feeRate: 10,
+      });
+
+      console.log("Sent BTC ==>", btcPayload);
+
+      const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
+
+      console.log("get InscribeId ==> ", inscribeId);
+
+      const sendPayload = await sendInscription({
+        targetAddress: address,
+        inscriptionId: inscribeId,
+        feeRate: 10,
+      });
+
+      console.log("sendPayload ==> ", sendPayload);
+    }
+
+    return unstakingDB;
+
+  } catch (error) {
+    await UnstakingProcess({
+      tokenType
     });
-
-    console.log("MEMQ Tx ==> ", payloadTransfer);
-    const payAmount = await payloadTransfer.data.amount;
-
-    const btcPayload = await SendBTC({
-      amount: payAmount,
-      targetAddress: payloadTransfer.data.payAddress,
-      feeRate: 10,
-    });
-
-    console.log("Sent BTC ==>", btcPayload);
-
-    const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
-
-    console.log("get InscribeId ==> ", inscribeId);
-
-    const sendPayload = await sendInscription({
-      targetAddress: address,
-      inscriptionId: inscribeId,
-      feeRate: 10,
-    });
-
-    console.log("sendPayload ==> ", sendPayload);
-
-    // Transfer token into user address
-  } else if (tokenType == "LIGO") {
-    console.log("LIGO token claiming...");
-    let amount = Math.floor(payload.rewardAmount);
-    const payloadTransfer = await TransferInscrioption({
-      // TODO change address into treasure
-      receiveAddress: TREASURE_WALLET,
-      feeRate: 10,
-      ticker: "LIGO",
-      amount: amount.toString(),
-    });
-
-    console.log("LIGO Tx ==> ", payloadTransfer);
-    const payAmount = await payloadTransfer.data.amount;
-
-    const btcPayload = await SendBTC({
-      amount: payAmount,
-      targetAddress: payloadTransfer.data.payAddress,
-      feeRate: 10,
-    });
-
-    console.log("Sent BTC ==>", btcPayload);
-
-    const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
-
-    console.log("get InscribeId ==> ", inscribeId);
-
-    const sendPayload = await sendInscription({
-      targetAddress: address,
-      inscriptionId: inscribeId,
-      feeRate: 10,
-    });
-
-    console.log("sendPayload ==> ", sendPayload);
   }
-
-  return unstakingDB;
 };
 
 export const getWalletAddress = async () => {

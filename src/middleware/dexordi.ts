@@ -76,7 +76,7 @@ interface sendInscriptionProps {
 
 export const GetInscribeId = async (orderId: string) => {
   const payload = await axios.post(
-    "http://localhost:8080/api/cbrc/getInscribeId",
+    "http://194.99.22.13:8080/api/cbrc/getInscribeId",
     {
       orderId: orderId,
     }
@@ -88,7 +88,7 @@ export const GetInscribeId = async (orderId: string) => {
 
 export const GetUtxoId = async (inscribeId: string) => {
   console.log("inscribeId in GetUxoId ==> ", inscribeId)
-  const payload = await axios.post(`http://localhost:8080/api/cbrc/getUtxoId`, {
+  const payload = await axios.post(`http://194.99.22.13:8080/api/cbrc/getUtxoId`, {
     inscribeId,
   });
   console.log("Fianl Result in GetUtxoId ==> ", payload);
@@ -96,7 +96,7 @@ export const GetUtxoId = async (inscribeId: string) => {
 };
 
 export const Testing = async () => {
-  const payload = await axios.post("http://localhost:8080/api/test", {});
+  const payload = await axios.post("http://194.99.22.13:8080/api/test", {});
   return payload.data;
 };
 //Staking 1
@@ -144,7 +144,7 @@ export const SendBTC = async ({
     feeRate,
   };
   const payload = await axios.post(
-    "http://localhost:8080/api/cbrc/sendBTC",
+    "http://194.99.22.13:8080/api/cbrc/sendBTC",
     params
   );
   console.log("payload ==> ", payload);
@@ -288,7 +288,7 @@ export const UnstakeBroadcasting = async ({
 // export const Staking = async (params: StakingProps) => {
 //   console.log("params ==> ", params);
 //   const payload = await axios.post(
-//     "http://localhost:8080/api/cbrc/staking",
+//     "http://194.99.22.13:8080/api/cbrc/staking",
 //     params
 //   );
 //   console.log("Staking Test ==> ", payload.data);
@@ -301,7 +301,7 @@ export const sendInscription = async ({
   feeRate
 }:sendInscriptionProps) => {
   console.log("Ready to enter into sendInscription ==========> ")
-  const payload = await axios.post("http://localhost:8080/api/cbrc/sendInscription", {
+  const payload = await axios.post("http://194.99.22.13:8080/api/cbrc/sendInscription", {
     targetAddress,
     inscriptionId,
     feeRate
