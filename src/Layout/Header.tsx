@@ -12,12 +12,22 @@ import DiscordIcon from "../Icon/DiscordIcon";
 import GitBookIcon from "../Icon/GitBookIcon";
 import MIcon from "../Icon/MIcon";
 
+import { useUserContext } from "../context/loadingContext";
+
 import ConnectWalletBtn from "../component/ConnectWalletBtn";
 import SocialComp from "../component/SocialComp";
 
 export default function Header() {
 
   const [sidebar, setSidebar] = useState(false);
+
+  const { connected, setConnected } = useUserContext();
+
+  const connectFunc = () => {
+    setSidebar(flag => !flag);
+    setConnected(true);
+  }
+
   return (
     <>
       <div className="flex flex-row items-center justify-between w-full gap-2">
@@ -35,7 +45,7 @@ export default function Header() {
             <HeaderBtn content="Launchpad" active={false} />
             <HeaderBtn content="CybordPool" active={true} />
           </div>
-          <div className="flex flex-row items-center justify-center min-[1280px]:hidden ml-auto cursor-pointer hover:animate-pulse" onClick={() => setSidebar(flag => !flag)}>
+          <div className="flex flex-row items-center justify-center min-[1280px]:hidden ml-auto cursor-pointer hover:animate-pulse" onClick={() => connectFunc()}>
             <IoReorderThree size={'50px'} color="white" />
           </div>
         </div>

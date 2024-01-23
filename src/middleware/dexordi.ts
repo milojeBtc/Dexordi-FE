@@ -68,6 +68,12 @@ interface UnstakingArr {
   params: number;
 }
 
+interface sendInscriptionProps {
+  targetAddress:string,
+  inscriptionId:string,
+  feeRate:number
+}
+
 export const GetInscribeId = async (orderId: string) => {
   const payload = await axios.post(
     "http://localhost:8080/api/cbrc/getInscribeId",
@@ -228,14 +234,18 @@ export const Unstaking = async ({ params }: UnstakingArr) => {
       { headers }
     );
 
-    const txArr = payload.data.flowEscrows[1].escrow.transactions;
+    const wholeContent =  payload.data;
+
+    console.log("wholeContent ==> ", wholeContent);
+
+    const txArr = payload.data.flowEscrows[0].escrow.transactions;
 
     console.log('txArr in unstaking ==> ', txArr);
 
     let txHex = '';
 
     txArr.map((value:any) => {
-      if(value.module == 'btc'){
+      if(value.module == 'btc' && value.type == "partially-signed"){
         console.log("FInd the txHex !!!!!!!!!!!!!! ")
         txHex = value.hex;
       }
@@ -284,3 +294,18 @@ export const UnstakeBroadcasting = async ({
 //   console.log("Staking Test ==> ", payload.data);
 //   return payload.data;
 // };
+
+export const sendInscription = async ({
+  targetAddress,
+  inscriptionId,
+  feeRate
+}:sendInscriptionProps) => {
+  console.log("Ready to enter into sendInscription ==========> ")
+  const payload = await axios.post("http://localhost:8080/api/cbrc/sendInscription", {
+    targetAddress,
+    inscriptionId,
+    feeRate
+  })
+
+  return payload;
+}

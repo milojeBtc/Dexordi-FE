@@ -33,13 +33,19 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
 
   const [LockTime, setLockTime] = useState(-1);
 
-  const { loading, setLoading } = useUserContext();
+  const { loading, setLoading, connected } = useUserContext();
 
   const [potentialBrcReward, setPotentialBrcReward] = useState(0);
   const [potentialBordReward, setPotentialBordReward] = useState(0);
   const [potentialAReward, setPotentialAReward] = useState(0);
 
   const stakingBrcHandler = async () => {
+
+    // if(connected == false){
+    //   toast.warn("Please connect wallet first");
+    //   return
+    // }
+
     console.log("refer value ==> ", stakingRef.current);
     console.log(
       "refer value ==> ",
@@ -77,6 +83,12 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
   };
 
   const claimRewardFunc = async () => {
+
+    // if(connected == false){
+    //   toast.warn("Please connect wallet first");
+    //   return
+    // }
+
     if (potentialBrcReward == 0) {
       toast.warn("There is no Reward!!");
     } else {
@@ -95,6 +107,12 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     // let temp = proxyCatagoryFunc(catagory);
     // console.log("unstaknig token type ==> ", temp);
     // if (typeof temp == "string")
+
+    if(connected == false){
+      toast.warn("Please connect wallet first");
+      return
+    }
+
       await UnstakingProcess({
         tokenType: catagory,
       });

@@ -1,7 +1,16 @@
 import axios from "axios";
 import { cbrc20Transfer } from "./cbrc20";
-import { SendBTC, TransferInscrioption } from "./dexordi";
-import { LIGO_TREASURE_WALLET, MEME_TREASURE_WALLET } from "../config/treasureWallet";
+import {
+  GetInscribeId,
+  SendBTC,
+  TransferInscrioption,
+  sendInscription,
+} from "./dexordi";
+import {
+  LIGO_TREASURE_WALLET,
+  MEME_TREASURE_WALLET,
+  TREASURE_WALLET,
+} from "../config/treasureWallet";
 
 interface stakingProps {
   wallet: string;
@@ -12,7 +21,7 @@ interface stakingProps {
 }
 
 interface checkPotentialRewardProps {
-  tokenType: string
+  tokenType: string;
 }
 
 interface getEscrowId {
@@ -21,9 +30,9 @@ interface getEscrowId {
 }
 
 interface UnstakingDBProps {
-  id: string,
-  removeIndex: string
-  tokenType: string,
+  id: string;
+  removeIndex: string;
+  tokenType: string;
 }
 
 const proxyCatagoryFunc = (cata: string) => {
@@ -39,7 +48,6 @@ export const Staking = ({
   lockTime,
   escrowId,
 }: stakingProps) => {
-
   const params = {
     wallet,
     tokenType,
@@ -50,125 +58,180 @@ export const Staking = ({
     escrowId,
   };
 
-  const stakingPayload = axios.post("http://localhost:8080/api/cbrc/staking", params);
+  const stakingPayload = axios.post(
+    "http://localhost:8080/api/cbrc/staking",
+    params
+  );
 
-  console.log('staking Result ==> ', stakingPayload);
+  console.log("staking Result ==> ", stakingPayload);
   return stakingPayload;
 };
 
 export const checkPotentialReward = async ({
-  tokenType
-}:checkPotentialRewardProps) => {
-
+  tokenType,
+}: checkPotentialRewardProps) => {
   try {
-  const unisat = await (window as any).unisat;
-  const [address] = await unisat.getAccounts();
-  console.log("checkPotentialReward ==> ", address);
+    const unisat = await (window as any).unisat;
+    const [address] = await unisat.getAccounts();
+    console.log("checkPotentialReward ==> ", address);
 
-  // let temp = proxyCatagoryFunc(tokenType);
+    // let temp = proxyCatagoryFunc(tokenType);
 
-  const params = {
-    wallet:address,
-    tokenType:tokenType
-  }
+    const params = {
+      wallet: address,
+      tokenType: tokenType,
+    };
 
-  console.log("params in chechPotential ==>", params);
-    const payload = await axios.post("http://localhost:8080/api/cbrc/checkPotentialReward", params);
+    console.log("params in chechPotential ==>", params);
+    const payload = await axios.post(
+      "http://localhost:8080/api/cbrc/checkPotentialReward",
+      params
+    );
 
-    console.log('checkPotentialReward payload ==> ', payload.data.rewardAmount);
+    console.log("checkPotentialReward payload ==> ", payload.data.rewardAmount);
 
     return payload.data.rewardAmount;
   } catch (error) {
-    console.log('new user!!')
+    console.log("new user!!");
     return 0;
   }
-  
-}
+};
 
-export const claimReward = async ({
-  tokenType
-}:checkPotentialRewardProps) => {
-
+export const claimReward = async ({ tokenType }: checkPotentialRewardProps) => {
   const unisat = await (window as any).unisat;
   const [address] = await unisat.getAccounts();
   console.log("claimReward ==> ", address);
   let temp = proxyCatagoryFunc(tokenType);
   const params = {
-    wallet:address, 
-    tokenType:temp
-  }
+    wallet: address,
+    tokenType: temp,
+  };
 
-  const payload = await axios.post("http://localhost:8080/api/cbrc/claimReward", params);
+  const payload = await axios.post(
+    "http://localhost:8080/api/cbrc/claimReward",
+    params
+  );
 
-  console.log('claimReward payload ==> ', payload.data.rewardAmount);
+  console.log("claimReward payload ==> ", payload.data.rewardAmount);
 
   // TODO: tick name should be changed to tokenTYpe
-  if(tokenType == 'xODI'){
+  if (tokenType == "xODI") {
     const cbrcPayload = await cbrc20Transfer({
       tick: "QWER",
       // tick:tokenType, TODO active this
-      transferAmount: payload.data.rewardAmount
+      transferAmount: payload.data.rewardAmount,
     });
 
+    console.log("  ", cbrcPayload);
+
     // send inscription user address
-  
-    console.log('cbrcPayload ==> ', cbrcPayload);
-  
+    setTimeout(async () => {
+      // await sendInscription({
+      //   targetAddress:address,
+      //   inscriptionId:"635294e17ca24a34632c187567746f6f01066163ac3e78054dbc7ce4a33453d4i0",
+      //   feeRate: 10
+      // })
+    }, 5000);
+
+    // console.log('cbrcPayload ==> ', cbrcPayload);
+
     return payload.data.rewardAmount;
-  } else if(tokenType == 'MEME'){
-    
-    console.log("MEME token claiming...")
+  } else if (tokenType == "MEME") {
+    console.log("MEME token claiming...");
     let amount = Math.floor(payload.data.rewardAmount);
     const payloadTransfer = await TransferInscrioption({
       // TODO change address into treasure
-      receiveAddress: address,
+      receiveAddress: TREASURE_WALLET,
       feeRate: 10,
-      ticker: 'MEMQ',
+      ticker: "MEMQ",
       amount: amount.toString(),
     });
 
     console.log("MEMQ Tx ==> ", payloadTransfer);
+    const payAmount = await payloadTransfer.data.amount;
 
     const btcPayload = await SendBTC({
-      amount: amount,
+      amount: payAmount,
       targetAddress: payloadTransfer.data.payAddress,
-      feeRate: 10
-    })
+      feeRate: 10,
+    });
 
-    console.log('Sent BTC ==>', btcPayload)
+    console.log("Sent BTC ==>", btcPayload);
+
+    const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
+
+    console.log("get InscribeId ==> ", inscribeId);
+
+    const sendPayload = await sendInscription({
+      targetAddress: address,
+      inscriptionId: inscribeId,
+      feeRate: 10,
+    });
+
+    console.log("sendPayload ==> ", sendPayload);
 
     // Transfer token into user address
+  } else if (tokenType == "LIGO") {
+    // console.log("LIGO token claiming...");
+    // let amount = Math.floor(payload.data.rewardAmount);
+    // const payloadTransfer = await TransferInscrioption({
+    //   // TODO change address into treasure
+    //   receiveAddress: address,
+    //   feeRate: 10,
+    //   ticker: "LIGO",
+    //   amount: amount.toString(),
+    // });
 
-  } else if (tokenType == 'LIGO'){
-    console.log("LIGO token claiming...")
+    // console.log("LIGO Tx ==> ", payloadTransfer);
+
+    // const btcPayload = await SendBTC({
+    //   amount: amount,
+    //   targetAddress: payloadTransfer.data.payAddress,
+    //   feeRate: 10,
+    // });
+
+    // console.log("Sent BTC ==>", btcPayload);
+    console.log("LIGO token claiming...");
     let amount = Math.floor(payload.data.rewardAmount);
     const payloadTransfer = await TransferInscrioption({
       // TODO change address into treasure
-      receiveAddress: address,
+      receiveAddress: TREASURE_WALLET,
       feeRate: 10,
-      ticker: 'LIGO',
+      ticker: "LIGO",
       amount: amount.toString(),
     });
 
     console.log("LIGO Tx ==> ", payloadTransfer);
+    const payAmount = await payloadTransfer.data.amount;
 
     const btcPayload = await SendBTC({
-      amount: amount,
+      amount: payAmount,
       targetAddress: payloadTransfer.data.payAddress,
-      feeRate: 10
-    })
+      feeRate: 10,
+    });
 
-    console.log('Sent BTC ==>', btcPayload)
+    console.log("Sent BTC ==>", btcPayload);
+
+    const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
+
+    console.log("get InscribeId ==> ", inscribeId);
+
+    const sendPayload = await sendInscription({
+      targetAddress: address,
+      inscriptionId: inscribeId,
+      feeRate: 10,
+    });
+
+    console.log("sendPayload ==> ", sendPayload);
 
     // Transfer token into user address
   }
-  
-}
+};
 
 // export const cbrc20Test = async ({
 //   address,
 //   tokenType,
-  
+
 // }) => {
 //   const params = {
 //     wallet:address,
@@ -178,17 +241,23 @@ export const claimReward = async ({
 //   const payload = await axios.post("http://localhost:8080/api/cbrc/claimReward", params);
 // }
 
-export const getEscrowId = async (params:getEscrowId) => {
-  const payload = await axios.post("http://localhost:8080/api/cbrc/unstaking", params);
-  console.log('unstaking available esocrow id ==> ', payload.data.escrowId);
+export const getEscrowId = async (params: getEscrowId) => {
+  const payload = await axios.post(
+    "http://localhost:8080/api/cbrc/unstaking",
+    params
+  );
+  console.log("unstaking available esocrow id ==> ", payload.data.escrowId);
 
   return payload.data;
-}
+};
 
-export const UnstakingDB = async(params:UnstakingDBProps) => {
+export const UnstakingDB = async (params: UnstakingDBProps) => {
   console.log("UnstakingDB ==> ", params);
 
-  const payload = await axios.post("http://localhost:8080/api/cbrc/unstakingDB", params);
+  const payload = await axios.post(
+    "http://localhost:8080/api/cbrc/unstakingDB",
+    params
+  );
 
-  return payload
-}
+  return payload;
+};

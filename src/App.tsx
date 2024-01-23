@@ -18,9 +18,10 @@ import 'react-toastify/dist/ReactToastify.css';
 function App() {
 
   const [loading, setLoading] = useState(null);
+  const [connected, setConnected] = useState(false);
 
   return (
-    <UserContext.Provider value={{loading, setLoading}}>
+    <UserContext.Provider value={{loading, setLoading, connected, setConnected}}>
       <div className="container mx-auto">
         <Header />
         <BrowserRouter>
