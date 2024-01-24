@@ -11,15 +11,17 @@ import {
   SendBTC,
   sendInscription,
 } from "./dexordi";
-import { Staking, UnstakingDB, getEscrowId } from "./db";
+import { Staking, StakingCBRC, UnstakingDB, getEscrowId } from "./db";
 
 import {
   xODI_TREASURE_WALLET,
   MEME_TREASURE_WALLET,
   LIGO_TREASURE_WALLET,
   TREASURE_WALLET,
+  CBRC_STAKING_WALLET,
 } from "../config/treasureWallet";
 import { cbrc20Transfer, getInscribeId } from "./cbrc20";
+import { delay } from "../utils/delay";
 
 const proxyCatagoryFunc = (cata: string) => {
   if (cata == "xODI") return "brc";
@@ -41,7 +43,7 @@ interface StakingCbrcProcess {
   ticker: string;
 }
 
-interface UnstakingProcessProps {
+interface UnstakingProcess {
   tokenType: string;
 }
 
@@ -49,7 +51,12 @@ interface UnstakingSignBroad {
   params: number[];
 }
 
-const timer = (ms: number) => new Promise(res => setTimeout(res, ms))
+interface StakingCBRCProcessProps {
+  stakingAmount: string,
+  lockTime: number,
+  ticker: string,
+  rewardType: string
+}
 
 
 export const StakingProcess = async ({
@@ -67,9 +74,6 @@ export const StakingProcess = async ({
 
   const utxoFrominscribe = async (orderId: string) => {
     const inscribePayload = await GetInscribeId(orderId);
-    // const utxoPayload = await GetUtxoId(inscribePayload);
-    // console.log("utxo ==> ", utxoPayload.txId);
-    // return utxoPayload.txId;
     const utxoPayload = inscribePayload.substring(0, inscribePayload.length - 2);
     console.log("utxoPayload ==> ", utxoPayload);
     return utxoPayload
@@ -94,98 +98,106 @@ export const StakingProcess = async ({
 
   const prevId = localStorage.getItem("inscribeId");
 
-  let inscribeId = "";
+  // if (prevId != null) {
+  //   console.log("Saved Inscribe ID ==>", prevId);
+  //   inscribeId = prevId;
+  // } else {
+  //   const prevOrderId = localStorage.getItem("orderId");
 
-  if (prevId != null) {
-    console.log("Saved Inscribe ID ==>", prevId);
-    inscribeId = prevId;
-  } else {
-    const prevOrderId = localStorage.getItem("orderId");
-    if (prevOrderId != null) {
-      const newInscribeId = await utxoFrominscribe(prevOrderId);
-      localStorage.setItem("inscribeId", newInscribeId);
+  //   if (prevOrderId != null) {
+  //     const newInscribeId = await utxoFrominscribe(prevOrderId);
+  //     localStorage.setItem("inscribeId", newInscribeId);
 
-      inscribeId = newInscribeId;
-      console.log("New Inscribe ID by prev OrderID==>", inscribeId);
-    } else {
-      let payload = {};
-      try {
-        payload = await TransferInscrioption({
-          receiveAddress: address,
-          feeRate: 10,
-          ticker: ticker,
-          amount: StakingAmount.toString(),
-        });
-      } catch (error) {
-        console.log("User Reject the wallet!!");
-        return 
-      }
+  //     inscribeId = newInscribeId;
+  //     console.log("New Inscribe ID by prev OrderID==>", inscribeId);
+  //   } else {
+  //     let payload = {};
+  //     try {
+  //       payload = await TransferInscrioption({
+  //         receiveAddress: address,
+  //         feeRate: 10,
+  //         ticker: ticker,
+  //         amount: StakingAmount.toString(),
+  //       });
+  //     } catch (error) {
+  //       return "Here";
+  //     }
 
-      console.log("Transfer ==> ", (payload as any).data);
+  //     console.log("Transfer ==> ", (payload as any).data);
 
-      const payAddress = await (payload as any).data.payAddress;
-      const amount = await (payload as any).data.amount;
-      const orderId = await (payload as any).data.orderId;
+  //     const payAddress = await (payload as any).data.payAddress;
+  //     const amount = await (payload as any).data.amount;
+  //     const orderId = await (payload as any).data.orderId;
 
-      console.log("orderId ==> ", orderId);
-      localStorage.setItem("orderId", orderId);
+  //     console.log("orderId ==> ", orderId);
+  //     localStorage.setItem("orderId", orderId);
 
-      const txid = await unisat.sendBitcoin(payAddress, amount);
-      console.log("txid ==> ", txid);
+  //     const txid = await unisat.sendBitcoin(payAddress, amount);
+  //     console.log("txid ==> ", txid);
 
-      const newInscribeId = await utxoFrominscribe(orderId);
-      localStorage.setItem("inscribeId", newInscribeId);
+  //     const newInscribeId = await utxoFrominscribe(orderId);
+  //     localStorage.setItem("inscribeId", newInscribeId);
 
-      inscribeId = newInscribeId;
-      console.log("New Inscribe ID ==>", inscribeId);
-    }
-  }
+  //     inscribeId = newInscribeId;
+  //     console.log("New Inscribe ID ==>", inscribeId);
+  //   }
+  // }
+  const inscribeIdPayload = await unisat.inscribeTransfer(ticker, stakingAmount);
+
+  const inscribeId = inscribeIdPayload.inscriptionId;
+
+  const utxo = inscribeId.substring(0, inscribeId.length - 2);
+
+  console.log("inscribe payload ==> ", inscribeId);
 
   try {
+    let escrowParamsHex: string = "70736274ff0100b202000000025bc6615001d2840d5dbb4f02cbd14d48e571857943a96870f27132f2054a69820000000000ffffffffe59c759fd4c09370b09acf31a5d6b3e715d2aef77987865cb7e874424e383e4d0000000000ffffffff022202000000000000225120fb1bd66f3444a880b5b0f6d54d9431c3ccc1bd4d93ab26197044c40e774343cfdd00000000000000225120815c79489d17d6f3e8ca54a5aa9318fe89a70ec188999126033d7d669f38971f000000000001012b2202000000000000225120815c79489d17d6f3e8ca54a5aa9318fe89a70ec188999126033d7d669f38971f011340b34a06196e916775decfada1c15ad7c367b197091c81d017d23e2e2fc0a7de6f81ae05724755967591b46dcc60cf3d5c9435d3bb3c7b7761c97733863c031d8f011720316c7c23e4c96a5e07187bcde49889126e955982100d7acb383ac92821aafc8e0001012b2202000000000000225120815c79489d17d6f3e8ca54a5aa9318fe89a70ec188999126033d7d669f38971f011340aba03ba0f678b403865e48f4450dddd6b4ef8418e5c5b46db18504eaeceaa84df6c5019949b8cd3d35c03d3772ec48bad5944a1296cc029c7fae7bf49bef1f8d011720316c7c23e4c96a5e07187bcde49889126e955982100d7acb383ac92821aafc8e000000";
+    let escrowId = 0;
 
-    // Creating Escrow 
-    console.log("================Delay Start==================")
-    timer(2000);
-    console.log("================Delay  Stop==================")
-    const creatingEscrowInput = {
-      where: {},
-      data: {
-        fee: 200,
-        staker: {
-          utxo: {
-            id: inscribeId,
-            sequence: 0,
+    console.log("==========================start")
+    while (escrowParamsHex.length > 850) {
+      // Creating Escrow
+      await delay(3000);
+      const creatingEscrowInput = {
+        where: {},
+        data: {
+          fee: 200,
+          staker: {
+            utxo: {
+              id: utxo,
+              sequence: 0,
+            },
+            ordinal: {
+              value: address,
+              publicKey: pubKey,
+            },
+            cardinal: {
+              value: address,
+              publicKey: pubKey,
+            },
           },
-          ordinal: {
-            value: address,
-            publicKey: pubKey,
-          },
-          cardinal: {
-            value: address,
-            publicKey: pubKey,
-          },
+          product: { id: 14 },
+          expiry: LockTime.toString(),
         },
-        product: { id: 14 },
-        expiry: LockTime.toString(),
-      },
-    };
+      };
 
-    console.log("creating escrow input ==> ", creatingEscrowInput);
-    const CreatingEscrowPayload = await CreatingEscrow(creatingEscrowInput);
-    console.log("creatingEscrowPayload Result ==> ", CreatingEscrowPayload);
+      console.log("creating escrow input ==> ", creatingEscrowInput);
+      const CreatingEscrowPayload = await CreatingEscrow(creatingEscrowInput);
+      console.log("creatingEscrowPayload Result ==> ", CreatingEscrowPayload);
 
-    const transactionList =
-      CreatingEscrowPayload.flowEscrows[0].escrow.transactions;
+      const transactionList = CreatingEscrowPayload.flowEscrows[0].escrow.transactions;
+      transactionList.map((value: any) => {
+        if (value.module == "btc") {
+          escrowParamsHex = value.hex;
+        }
+      });
 
-    let escrowParamsHex: string = "";
+      escrowId = CreatingEscrowPayload.id;
 
-    transactionList.map((value: any) => {
-      if (value.module == "btc") {
-        escrowParamsHex = value.hex;
-      }
-    });
+      await delay(4000);
+    }
 
-    const escrowId: number = CreatingEscrowPayload.id;
+    console.log("==========================valid hex")
 
     console.log("creatingEscrowPayload ==> ", escrowParamsHex);
     console.log("escrowId ==> ", escrowId);
@@ -242,16 +254,17 @@ export const StakingProcess = async ({
     // return {
     //   msg: error,
     // };
-    setTimeout(
-      () =>
-        StakingProcess({
-          stakingAmount,
-          lockTime,
-          ticker,
-          catagory,
-        }),
-      2000
-    );
+    // setTimeout(
+    //   () =>
+    // await delay(4000);
+    // await StakingProcess({
+    //   stakingAmount,
+    //   lockTime,
+    //   ticker,
+    //   catagory,
+    // })
+    // 2000
+    // );
   }
 };
 
@@ -312,11 +325,7 @@ export const StakingProcess = async ({
 //   console.log("stakingPayload ==> ", stakingPayload);
 // };
 
-export const UnstakingProcess = async ({ tokenType }: UnstakingProcessProps) => {
-  console.log("============= start UnstakingSignBroad ============= ");
-  console.log("============= start UnstakingSignBroad ============= ");
-
-
+export const UnstakingProcess = async ({ tokenType }: UnstakingProcess) => {
   console.log("============= start UnstakingSignBroad ============= ");
   //   Set env.
   const unisat = (window as any).unisat;
@@ -338,8 +347,11 @@ export const UnstakingProcess = async ({ tokenType }: UnstakingProcessProps) => 
 
   // 2.escrow unstaking
   try {
-    // TODO
-    // await UnstakingSignBroad(escrowArr);
+    const flag = await UnstakingSignBroad(escrowArr);
+
+    if (flag == false) {
+      return false;
+    }
 
     // 3. managet DB
     const unstakingDB = await UnstakingDB({
@@ -373,101 +385,112 @@ export const UnstakingProcess = async ({ tokenType }: UnstakingProcessProps) => 
         transferAmount: payload.rewardAmount,
       });
 
-      setTimeout(async () => {
-        const inscribeId = await getInscribeId({ address: TREASURE_WALLET });
-        console.log('cbrc20 inscription Id ==> ', inscribeId);
-        await sendInscription({
-          targetAddress: address,
-          inscriptionId: inscribeId,
-          feeRate: 10
-        })
-        console.log("cbrc20 sendInscription is finished!!");
-
-        return true;
-      }, 5000);
-
       // send inscription user address
 
-      console.log("cbrcPayload ==> ", cbrcPayload);
+      // setTimeout(async () => {
+      await delay(5000);
+      const inscribeId = cbrcPayload.data + "i0";
+      console.log("delay is started!!")
+      await delay(10000);
+      console.log("delay is ended!!")
+      console.log("inscribeId in cbrc20 transfer ==> ", inscribeId)
+      await sendInscription({
+        targetAddress: address,
+        inscriptionId: inscribeId,
+        feeRate: 10
+      })
+      console.log("cbrc20 sendInscription is finished!!");
 
-      return payload.rewardAmount;
+      return true;
     } else if (tokenType == "MEME") {
       console.log("MEME token claiming...");
       console.log("Payload in here ==> ", payload);
       let amount = Math.floor(payload.rewardAmount);
-      const payloadTransfer = await TransferInscrioption({
-        // TODO change address into treasure
-        receiveAddress: TREASURE_WALLET,
-        feeRate: 10,
-        ticker: "MEMQ",
-        amount: amount.toString(),
-      });
+      if (amount > 0) {
 
-      console.log("MEMQ Tx ==> ", payloadTransfer);
-      const payAmount = await payloadTransfer.data.amount;
 
-      const btcPayload = await SendBTC({
-        amount: payAmount,
-        targetAddress: payloadTransfer.data.payAddress,
-        feeRate: 10,
-      });
+        const payloadTransfer = await TransferInscrioption({
+          // TODO change address into treasure
+          receiveAddress: TREASURE_WALLET,
+          feeRate: 10,
+          ticker: "MEMQ",
+          amount: amount.toString(),
+        });
 
-      console.log("Sent BTC ==>", btcPayload);
+        console.log("MEMQ Tx ==> ", payloadTransfer);
+        const payAmount = await payloadTransfer.data.amount;
 
-      const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
+        const btcPayload = await SendBTC({
+          amount: payAmount,
+          targetAddress: payloadTransfer.data.payAddress,
+          feeRate: 10,
+        });
 
-      console.log("get InscribeId ==> ", inscribeId);
+        console.log("Sent BTC ==>", btcPayload);
 
-      const sendPayload = await sendInscription({
-        targetAddress: address,
-        inscriptionId: inscribeId,
-        feeRate: 10,
-      });
+        const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
 
-      console.log("sendPayload ==> ", sendPayload);
+        console.log("get InscribeId ==> ", inscribeId);
+        await delay(10000);
+
+        const sendPayload = await sendInscription({
+          targetAddress: address,
+          inscriptionId: inscribeId,
+          feeRate: 10,
+        });
+
+        console.log("sendPayload ==> ", sendPayload);
+      } else {
+        await delay(5000);
+      }
 
       // Transfer token into user address
     } else if (tokenType == "LIGO") {
       console.log("LIGO token claiming...");
       let amount = Math.floor(payload.rewardAmount);
-      const payloadTransfer = await TransferInscrioption({
-        // TODO change address into treasure
-        receiveAddress: TREASURE_WALLET,
-        feeRate: 10,
-        ticker: "LIGO",
-        amount: amount.toString(),
-      });
+      if (amount > 0) {
+        const payloadTransfer = await TransferInscrioption({
+          // TODO change address into treasure
+          receiveAddress: TREASURE_WALLET,
+          feeRate: 10,
+          ticker: "LIGO",
+          amount: amount.toString(),
+        });
 
-      console.log("LIGO Tx ==> ", payloadTransfer);
-      const payAmount = await payloadTransfer.data.amount;
+        console.log("LIGO Tx ==> ", payloadTransfer);
+        const payAmount = await payloadTransfer.data.amount;
 
-      const btcPayload = await SendBTC({
-        amount: payAmount,
-        targetAddress: payloadTransfer.data.payAddress,
-        feeRate: 10,
-      });
+        const btcPayload = await SendBTC({
+          amount: payAmount,
+          targetAddress: payloadTransfer.data.payAddress,
+          feeRate: 10,
+        });
 
-      console.log("Sent BTC ==>", btcPayload);
+        console.log("Sent BTC ==>", btcPayload);
 
-      const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
+        await delay(6000);
 
-      console.log("get InscribeId ==> ", inscribeId);
+        const inscribeId = await GetInscribeId(payloadTransfer.data.orderId);
 
-      const sendPayload = await sendInscription({
-        targetAddress: address,
-        inscriptionId: inscribeId,
-        feeRate: 10,
-      });
+        console.log("get InscribeId ==> ", inscribeId);
 
-      console.log("sendPayload ==> ", sendPayload);
+        const sendPayload = await sendInscription({
+          targetAddress: address,
+          inscriptionId: inscribeId,
+          feeRate: 10,
+        });
+
+        console.log("sendPayload ==> ", sendPayload);
+      } else {
+        await delay(5000);
+      }
+
     }
 
-    return unstakingDB;
+    return true;
 
   } catch (error) {
-    await UnstakingProcess({
-      tokenType
-    });
+    console.log("error in unstaking ==> ", error);
   }
 };
 
@@ -501,6 +524,10 @@ export const UnstakingSignBroad = async (params: any) => {
 
     console.log("txHex ==> ", txHex);
 
+    if (txHex == "") {
+      return false;
+    }
+
     console.log(`${params[i]}th escrow SignPsgt!!!`);
 
     // SignPsgt
@@ -526,5 +553,53 @@ export const UnstakingSignBroad = async (params: any) => {
     console.log(`${params[i]}th escrow unstaking End!!!`);
   }
 };
+
+
+export const StakingCBRCProcess = async ({
+  stakingAmount,
+  lockTime,
+  ticker,
+  rewardType
+}: StakingCBRCProcessProps) => {
+  const unisat = (window as any).unisat;
+  const [address] = await unisat.getAccounts();
+  const pubKey: string = await unisat.getPublicKey();
+
+  console.log("tickerName ==> ", ticker)
+  const cbrcInscribeId = localStorage.getItem('cbrcInscribeId')
+
+  try {
+    let inscribeId = '';
+    if (cbrcInscribeId == null) {
+      const inscribeInfo = await unisat.inscribeTransfer(ticker, stakingAmount);
+      // const inscribeId = inscribeInfo.inscribeId;
+      console.log("inscribeInfo ==> ", inscribeInfo);
+      inscribeId = inscribeInfo.inscriptionId;
+      localStorage.setItem("cbrcInscribeId", inscribeId);
+    } else {
+      inscribeId = cbrcInscribeId;
+    }
+
+    const result = await unisat.sendInscription(TREASURE_WALLET, inscribeId)
+
+    // DB
+    const stakingPayload = StakingCBRC({
+      wallet: address,
+      tokenType: ticker,
+      amount: parseInt(stakingAmount),
+      lockTime: lockTime * 30,
+      //   lockTime: lockTime,
+      inscribeId: inscribeId,
+    });
+
+    console.log("cbrcInscribeId ==> ", stakingPayload);
+    localStorage.removeItem("cbrcInscribeId");
+    return true
+  } catch (error) {
+    console.log('error ==> ', error);
+    return false;
+  }
+
+}
 
 

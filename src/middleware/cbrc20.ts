@@ -16,7 +16,7 @@ interface getInscribeIdProps {
 }
 
 export const cbrc20Test = async () => {
-    const payload = await axios.get("http://194.99.22.13:8081/", {});
+    const payload = await axios.get("http://146.19.215.121:8081/", {});
 
     console.log("CBRC20 Test ==> ", payload)
     return payload;
@@ -26,11 +26,7 @@ export const cbrc20Transfer = async ({
     tick,
     transferAmount
 }:cbrc20TransferProps) => {
-    // const params = {
-    //     tick:"QWER",
-    //     transferAmount:1000
-    // }
-    const payload = await axios.post("http://194.99.22.13:8081/transfer", {
+    const payload = await axios.post("http://146.19.215.121:8081/transfer", {
         tick,
         transferAmount
     });
@@ -38,7 +34,7 @@ export const cbrc20Transfer = async ({
     // TODO: send Inscription
 
 
-    console.log("CBRC20 Test ==> ", payload)
+    console.log("CBRC20 transfer Inscription id ==> ", payload)
     return payload;
 }
 
@@ -51,7 +47,7 @@ export const cbrc20TransferTest = async ({
         tick:"QWER",
         transferAmount:1000
     }
-    const payload = await axios.post("http://194.99.22.13:8081/transfer2", {
+    const payload = await axios.post("http://146.19.215.121:8081/transfer2", {
         tick,
         transferAmount,
         destination
@@ -67,7 +63,7 @@ export const cbrc20TransferTest = async ({
 export const getInscribeId = async({
     address
 }:getInscribeIdProps) => {
-    const inscribeId = await axios.post("http://194.99.22.13:8080/api/cbrc/getAddressInscriptions", {
+    const inscribeId = await axios.post("http://146.19.215.121:8080/api/cbrc/getAddressInscriptions", {
         address
     })
 

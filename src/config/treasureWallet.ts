@@ -1,6 +1,8 @@
 const testversion = true;
 
-export const TREASURE_WALLET = testversion ? 'tb1pfmh8ar4qjdh2u05unla32yz2wjemm6cuwj6c2ygr2hlp4mc8v6mqfp3txe' : 'bc1pfmh8ar4qjdh2u05unla32yz2wjemm6cuwj6c2ygr2hlp4mc8v6mq7f8yuk'
+export const TREASURE_WALLET = testversion ? 'tb1pcngsk49thk8e5m2ndfqv9sycltrjr4rx0prwhwr22mujl99y6szqw2kv0f' : 'bc1pcngsk49thk8e5m2ndfqv9sycltrjr4rx0prwhwr22mujl99y6szqezqr4x'
+
+export const CBRC_STAKING_WALLET = testversion ? 'tb1p5sdvfpdxd7cvmkwcc2edjja2z28jum9ar37808mr36lncn43mvfqsz5k8x' : 'bc1p5sdvfpdxd7cvmkwcc2edjja2z28jum9ar37808mr36lncn43mvfq82zeaf';
 
 export const xODI_TREASURE_WALLET = testversion ? 'tb1p6wrw49nykwghstkjkxg6w6qh95ejpsk9sql5n7hx4agz3j3lgrnse2n8xs' : 'bc1p6wrw49nykwghstkjkxg6w6qh95ejpsk9sql5n7hx4agz3j3lgrnswz9gul'
 

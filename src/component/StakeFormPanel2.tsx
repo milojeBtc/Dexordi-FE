@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useUserContext } from "../context/loadingContext";
 
 import {
+  StakingCBRCProcess,
   StakingProcess,
   // StakingCbrcProcess,
   UnstakingProcess,
@@ -19,16 +20,30 @@ const proxyCatagory = {
 };
 
 const proxyCatagoryFunc = (cata: string) => {
-  if (cata == "xODI") return "brc";
-  else if (cata == "MEME") return "odi";
-  else if (cata == "LIGO") return "a";
+
+  if (cata == "BORD-xODI")
+    return {
+      stakingType: "BORD",
+      rewardType: "xODI"
+    }
+  else if (cata == "xODI-BORD")
+    return {
+      stakingType: "xODI",
+      rewardType: "BORD"
+    }
+  else if (cata == "xODI-CBRC")
+    return {
+      stakingType: "xODI",
+      rewardType: "CBRC"
+    }
+
 };
 
 interface StakeFormPanel {
   catagory: string;
 }
 
-export default function StakeFormPanel({ catagory }: StakeFormPanel) {
+export default function StakeFormPanel2({ catagory }: StakeFormPanel) {
   const stakingRef = useRef(null);
 
   const [LockTime, setLockTime] = useState(-1);
@@ -37,12 +52,15 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
 
   const [potentialBrcReward, setPotentialBrcReward] = useState(0);
   const [potentialBrcAmount, setPotnetialBrcAmount] = useState(0)
-  const [potentialBordReward, setPotentialBordReward] = useState(0);
-  const [potentialAReward, setPotentialAReward] = useState(0);
+  // const [potentialBordReward, setPotentialBordReward] = useState(0);
+  // const [potentialAReward, setPotentialAReward] = useState(0);
+
+  const [stakingType, setStakingType] = useState("");
+  const [rewardType, setRewardType] = useState("");
 
   const stakingBrcHandler = async () => {
 
-    console.log("connected ==> ", connected);
+    // console.log("connected ==> ", connected);
     // if(connected == false){
     //   toast.warn("Please connect wallet first");
     //   return
@@ -64,24 +82,20 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
       return;
     }
     setLoading(true);
-    // toast.loading('Please wait for staking')
+    toast.info('Please wait for staking')
 
-    const result = await StakingProcess({
+    const result = await StakingCBRCProcess({
       stakingAmount: stakingAmount,
       lockTime: LockTime,
-      ticker: "$ODI",
-      // ticker: "DDDF",
-      catagory
+      ticker: stakingType,
+      rewardType: rewardType
     });
-
-    if (result == true) {
-      console.log("staking is ended!!! ===========>");
-      console.log("result ===========>", result);
-
-      setLoading(false);
-      toast.pause();
-      toast.success("Successfully staked!!");
+    if (result) {
+      toast.success("Staking successfully!");
+    } else {
+      toast.error("Something is wrong!!");
     }
+
   };
 
   const claimRewardFunc = async () => {
@@ -94,14 +108,12 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     if (potentialBrcReward == 0) {
       toast.warn("There is no Reward!!");
     } else {
-      setLoading(true);
       // let temp = proxyCatagoryFunc(catagory);
       // console.log("claimReward ==> ", temp);
       // if (typeof temp == "string")
       await claimReward({
         tokenType: catagory,
       });
-      setLoading(false);
       toast.success("Claim Reward Successfully!!");
       setPotentialBrcReward(0);
     }
@@ -116,12 +128,10 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
     //   toast.warn("Please connect wallet first");
     //   return
     // }
-    setLoading(true);
+
     const flag = await UnstakingProcess({
       tokenType: catagory,
     });
-
-    setLoading(false);
 
     if (flag == false) {
       toast.error("Network is busy now. Try again after 10m")
@@ -131,54 +141,51 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
       setPotnetialBrcAmount(0)
       // await claimRewardFunc();
     }
+
   };
 
-  const brcCheck = async () => {
+  const xODICheck = async () => {
     let temp = await checkPotentialReward({
-      tokenType: "brc",
+      tokenType: "xODI",
     });
     setPotentialBrcReward(temp);
 
     let stakingAmount = await checkPotentialStakingAmount({
-      tokenType: "brc",
+      tokenType: "xODI",
     })
     setPotnetialBrcAmount(stakingAmount)
 
   };
 
-  const odiCheck = async () => {
+  const bordCheck = async () => {
     let temp = await checkPotentialReward({
-      tokenType: "odi",
+      tokenType: "bord",
     });
     // setPotentialBordReward(temp);
     setPotentialBrcReward(temp);
 
     let stakingAmount = await checkPotentialStakingAmount({
-      tokenType: "odi",
+      tokenType: "bord",
     })
     setPotnetialBrcAmount(stakingAmount)
   };
 
-  const aCheck = async () => {
+  const cbrcCheck = async () => {
     let temp = await checkPotentialReward({
-      tokenType: "a",
+      tokenType: "cbrc",
     });
     // setPotentialBordReward(temp);
     setPotentialBrcReward(temp);
 
     let stakingAmount = await checkPotentialStakingAmount({
-      tokenType: "a",
+      tokenType: "cbrc",
     })
     setPotnetialBrcAmount(stakingAmount)
   };
 
   useEffect(() => {
-    if (proxyCatagoryFunc(catagory) == "brc") brcCheck();
-    if (proxyCatagoryFunc(catagory) == "odi") odiCheck();
-    if (proxyCatagoryFunc(catagory) == "a") aCheck();
-
-    if (catagory == "MEME") odiCheck();
-    if (catagory == "LIGO") aCheck();
+    setStakingType(catagory.split('-')[0]);
+    setRewardType(catagory.split('-')[1])
   }, []);
 
   return (
@@ -198,7 +205,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              $ODI
+              {stakingType}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">
@@ -276,7 +283,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              $ODI
+              {stakingType}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">
@@ -315,7 +322,7 @@ export default function StakeFormPanel({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              {catagory}
+              {rewardType}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">

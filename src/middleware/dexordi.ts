@@ -5,6 +5,7 @@ import { OPENAPI_UNISAT } from "../config/url";
 import { MY_COMPANY_API_KEY } from "../config/authkeys";
 
 import { DEEP_LAKE_REST_API_URL } from "../config/url";
+import { delay } from "../utils/delay";
 
 // interface StakingDataProps {
 //   amount: number;
@@ -69,14 +70,14 @@ interface UnstakingArr {
 }
 
 interface sendInscriptionProps {
-  targetAddress:string,
-  inscriptionId:string,
-  feeRate:number
+  targetAddress: string,
+  inscriptionId: string,
+  feeRate: number
 }
 
 export const GetInscribeId = async (orderId: string) => {
   const payload = await axios.post(
-    "http://194.99.22.13:8080/api/cbrc/getInscribeId",
+    "http://146.19.215.121:8080/api/cbrc/getInscribeId",
     {
       orderId: orderId,
     }
@@ -88,7 +89,7 @@ export const GetInscribeId = async (orderId: string) => {
 
 export const GetUtxoId = async (inscribeId: string) => {
   console.log("inscribeId in GetUxoId ==> ", inscribeId)
-  const payload = await axios.post(`http://194.99.22.13:8080/api/cbrc/getUtxoId`, {
+  const payload = await axios.post(`http://146.19.215.121:8080/api/cbrc/getUtxoId`, {
     inscribeId,
   });
   console.log("Fianl Result in GetUtxoId ==> ", payload);
@@ -96,7 +97,7 @@ export const GetUtxoId = async (inscribeId: string) => {
 };
 
 export const Testing = async () => {
-  const payload = await axios.post("http://194.99.22.13:8080/api/test", {});
+  const payload = await axios.post("http://146.19.215.121:8080/api/test", {});
   return payload.data;
 };
 //Staking 1
@@ -144,10 +145,11 @@ export const SendBTC = async ({
     feeRate,
   };
   const payload = await axios.post(
-    "http://194.99.22.13:8080/api/cbrc/sendBTC",
+    "http://146.19.215.121:8080/api/cbrc/sendBTC",
     params
   );
   console.log("payload ==> ", payload);
+  return payload;
 };
 //Staking 3
 export const CreatingEscrow = async (params: CreatingEscrowProps) => {
@@ -211,15 +213,27 @@ export const Broadcasting = async ({
 
 // Unstaking 2
 export const Unstaking = async ({ params }: UnstakingArr) => {
-  const headers = { Authorization: MY_COMPANY_API_KEY };
-  const data = {
-    state: "unstake",
-    fee: 200,
-    index: 0,
-    product: {
-      id: 14,
-    },
-  };
+
+  let txHex = '70736274ff0100db0200000003d26851a5fc08408ed2ffe9d9247afd1bd441adc6de30fc8fb726c5f8c5e00368000000000001000000d26851a5fc08408ed2ffe9d9247afd1bd441adc6de30fc8fb726c5f8c5e003680100000000ffffffff05ab647547736066d63619fb8a9233e68e92c36d7dbb3a367a269f58e66c5cc30100000000ffffffff022202000000000000225120815c79489d17d6f3e8ca54a5aa9318fe89a70ec188999126033d7d669f38971f0400000000000000225120815c79489d17d6f3e8ca54a5aa9318fe89a70ec188999126033d7d669f38971f9de1af650001012b2202000000000000225120c4c1db137e5b7f0210b79120a86e4b1fc1794053706062ecbcd0cc2d67020d8b2215c093674766caa3db9c0f63c4b74f302510c509d6d0ffac9d67214d8f03cb2ed27a2a049de1af65b17520559ad6902ae6f93103038078c0c01934fe1a551273d433c303e03658b117daa6acc00001012bdd00000000000000225120815c79489d17d6f3e8ca54a5aa9318fe89a70ec188999126033d7d669f38971f011720316c7c23e4c96a5e07187bcde49889126e955982100d7acb383ac92821aafc8e0001012bdd00000000000000225120815c79489d17d6f3e8ca54a5aa9318fe89a70ec188999126033d7d669f38971f011720316c7c23e4c96a5e07187bcde49889126e955982100d7acb383ac92821aafc8e000000';
+
+  let tryTime = 0;
+  let MAX_TRY_TIME = 3
+
+  while (txHex.length > 850 && tryTime < MAX_TRY_TIME) {
+
+    console.log("==============Retry delay1=============")
+    await delay(5000);
+    tryTime++;
+    console.log("==============Retry delay2=============")
+    const headers = { Authorization: MY_COMPANY_API_KEY };
+    const data = {
+      state: "unstake",
+      fee: 200,
+      index: 0,
+      product: {
+        id: 14,
+      },
+    };
 
     console.log('ready to unstake!!!!!!!!!!!!!!!!!!!!!!')
     const qs = require("qs");
@@ -234,7 +248,7 @@ export const Unstaking = async ({ params }: UnstakingArr) => {
       { headers }
     );
 
-    const wholeContent =  payload.data;
+    const wholeContent = payload.data;
 
     console.log("wholeContent ==> ", wholeContent);
 
@@ -242,10 +256,10 @@ export const Unstaking = async ({ params }: UnstakingArr) => {
 
     console.log('txArr in unstaking ==> ', txArr);
 
-    let txHex = '';
 
-    txArr.map((value:any) => {
-      if(value.module == 'btc' && value.type == "partially-signed"){
+
+    txArr.map((value: any) => {
+      if (value.module == 'btc' && value.type == "partially-signed") {
         console.log("FInd the txHex !!!!!!!!!!!!!! ")
         txHex = value.hex;
       }
@@ -255,7 +269,14 @@ export const Unstaking = async ({ params }: UnstakingArr) => {
 
     console.log(" Unstaking ID !!!!!!!!!!! ==> ", params);
 
-    return txHex;
+  }
+
+  if(tryTime == MAX_TRY_TIME){
+    return ""
+  }
+
+  return txHex;
+
 };
 
 export const UnstakeBroadcasting = async ({
@@ -288,7 +309,7 @@ export const UnstakeBroadcasting = async ({
 // export const Staking = async (params: StakingProps) => {
 //   console.log("params ==> ", params);
 //   const payload = await axios.post(
-//     "http://194.99.22.13:8080/api/cbrc/staking",
+//     "http://146.19.215.121:8080/api/cbrc/staking",
 //     params
 //   );
 //   console.log("Staking Test ==> ", payload.data);
@@ -299,9 +320,9 @@ export const sendInscription = async ({
   targetAddress,
   inscriptionId,
   feeRate
-}:sendInscriptionProps) => {
+}: sendInscriptionProps) => {
   console.log("Ready to enter into sendInscription ==========> ")
-  const payload = await axios.post("http://194.99.22.13:8080/api/cbrc/sendInscription", {
+  const payload = await axios.post("http://146.19.215.121:8080/api/cbrc/sendInscription", {
     targetAddress,
     inscriptionId,
     feeRate
