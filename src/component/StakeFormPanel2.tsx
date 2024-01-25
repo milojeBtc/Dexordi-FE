@@ -4,12 +4,10 @@ import { useUserContext } from "../context/loadingContext";
 
 import {
   StakingCBRCProcess,
-  StakingProcess,
-  // StakingCbrcProcess,
-  UnstakingProcess,
+  cbrcUnstakingProcess,
 } from "../middleware/process";
 
-import { checkPotentialReward, checkPotentialStakingAmount, claimReward } from "../middleware/db";
+import { cbrcClaimReward, checkCbrcPotentialReward, checkCbrcPotentialStakingAmount, claimReward } from "../middleware/db";
 
 import { toast } from "react-toastify";
 
@@ -58,6 +56,12 @@ export default function StakeFormPanel2({ catagory }: StakeFormPanel) {
   const [stakingType, setStakingType] = useState("");
   const [rewardType, setRewardType] = useState("");
 
+  const stakingCatagory = () => {
+    if (catagory == "xODI") return "BORD";
+    else if (catagory == "BORD") return "xODI";
+    else if (catagory == "CBRC") return "xODI";
+  }
+
   const stakingBrcHandler = async () => {
 
     // console.log("connected ==> ", connected);
@@ -88,8 +92,9 @@ export default function StakeFormPanel2({ catagory }: StakeFormPanel) {
       stakingAmount: stakingAmount,
       lockTime: LockTime,
       ticker: stakingType,
-      rewardType: rewardType
+      rewardType: catagory
     });
+    setLoading(false)
     if (result) {
       toast.success("Staking successfully!");
     } else {
@@ -108,84 +113,86 @@ export default function StakeFormPanel2({ catagory }: StakeFormPanel) {
     if (potentialBrcReward == 0) {
       toast.warn("There is no Reward!!");
     } else {
-      // let temp = proxyCatagoryFunc(catagory);
-      // console.log("claimReward ==> ", temp);
-      // if (typeof temp == "string")
-      await claimReward({
+      setLoading(true);
+      await cbrcClaimReward({
         tokenType: catagory,
       });
+      setLoading(false);
       toast.success("Claim Reward Successfully!!");
       setPotentialBrcReward(0);
     }
   };
 
   const unstakingFunc = async () => {
-    // let temp = proxyCatagoryFunc(catagory);
-    // console.log("unstaknig token type ==> ", temp);
-    // if (typeof temp == "string")
+    if (potentialBrcAmount) {
+      toast.info("Unstaknig is started!!")
+      setLoading(true);
+      const flag = await cbrcUnstakingProcess({
+        tokenType: catagory,
+      });
 
-    // if(connected == false){
-    //   toast.warn("Please connect wallet first");
-    //   return
-    // }
-
-    const flag = await UnstakingProcess({
-      tokenType: catagory,
-    });
-
-    if (flag == false) {
-      toast.error("Network is busy now. Try again after 10m")
+      setLoading(false);
+      if (flag == false) {
+        toast.error("Network is busy now. Try again after 10m")
+      } else {
+        toast.success("Unstaking Successfully!!");
+        setPotentialBrcReward(0);
+        setPotnetialBrcAmount(0)
+      }
     } else {
-      toast.success("Unstaking Successfully!!");
-      setPotentialBrcReward(0);
-      setPotnetialBrcAmount(0)
-      // await claimRewardFunc();
+      toast.error("Not found staking escrow!!");
     }
 
   };
 
+
   const xODICheck = async () => {
-    let temp = await checkPotentialReward({
+    let temp = await checkCbrcPotentialReward({
       tokenType: "xODI",
     });
     setPotentialBrcReward(temp);
 
-    let stakingAmount = await checkPotentialStakingAmount({
+    let stakingAmount = await checkCbrcPotentialStakingAmount({
       tokenType: "xODI",
     })
     setPotnetialBrcAmount(stakingAmount)
 
   };
 
-  const bordCheck = async () => {
-    let temp = await checkPotentialReward({
-      tokenType: "bord",
+  const bordheck = async () => {
+    let temp = await checkCbrcPotentialReward({
+      tokenType: "BORD",
     });
     // setPotentialBordReward(temp);
     setPotentialBrcReward(temp);
 
-    let stakingAmount = await checkPotentialStakingAmount({
-      tokenType: "bord",
+    let stakingAmount = await checkCbrcPotentialStakingAmount({
+      tokenType: "BORD",
     })
     setPotnetialBrcAmount(stakingAmount)
   };
 
   const cbrcCheck = async () => {
-    let temp = await checkPotentialReward({
-      tokenType: "cbrc",
+    let temp = await checkCbrcPotentialReward({
+      tokenType: "CBRC",
     });
     // setPotentialBordReward(temp);
     setPotentialBrcReward(temp);
 
-    let stakingAmount = await checkPotentialStakingAmount({
-      tokenType: "cbrc",
+    let stakingAmount = await checkCbrcPotentialStakingAmount({
+      tokenType: "CBRC",
     })
     setPotnetialBrcAmount(stakingAmount)
   };
 
   useEffect(() => {
-    setStakingType(catagory.split('-')[0]);
-    setRewardType(catagory.split('-')[1])
+    if (catagory == "xODI") xODICheck();
+    if (catagory == "BORD") bordheck();
+    if (catagory == "CBRC") cbrcCheck();
+
+    if (catagory == "xODI") setStakingType("BORD");
+    if (catagory == "BORD") setStakingType("xODI");
+    if (catagory == "CBRC") setStakingType("xODI");
   }, []);
 
   return (
@@ -205,7 +212,7 @@ export default function StakeFormPanel2({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              {stakingType}
+              {stakingCatagory()}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">
@@ -283,7 +290,7 @@ export default function StakeFormPanel2({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              {stakingType}
+              {catagory}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">
@@ -322,7 +329,7 @@ export default function StakeFormPanel2({ catagory }: StakeFormPanel) {
               alt="CBRC MARK"
             ></img>
             <p className="text-white font-DM-Sans text-[18px] font-bold leading-[26px]">
-              {rewardType}
+              {catagory}
             </p>
           </div>
           <div className="flex flex-row items-center justify-between w-7/12 h-[62px] rounded-[20px] px-4 ml-auto bg-white">

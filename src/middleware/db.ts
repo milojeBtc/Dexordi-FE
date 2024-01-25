@@ -44,10 +44,16 @@ interface UnstakingDBProps {
   tokenType: string;
 }
 
+interface cbrcUnstakingDBProps {
+  wallet: string;
+  tokenType: string;
+}
+
 const proxyCatagoryFunc = (cata: string) => {
   if (cata == "xODI") return "brc";
   else if (cata == "MEME") return "odi";
   else if (cata == "LIGO") return "a";
+  else return cata;
 };
 
 export const Staking = ({
@@ -76,7 +82,7 @@ export const Staking = ({
   return stakingPayload;
 };
 
-export const checkPotentialReward = async ({
+export const  checkPotentialReward = async ({
   tokenType,
 }: checkPotentialRewardProps) => {
   try {
@@ -84,15 +90,15 @@ export const checkPotentialReward = async ({
     const [address] = await unisat.getAccounts();
     console.log("checkPotentialReward ==> ", address);
 
-    // let temp = proxyCatagoryFunc(tokenType);
-
     const params = {
       wallet: address,
       tokenType: tokenType,
     };
 
-    console.log("params in chechPotential ==>", params);
-    if (tokenType == "xODI" || tokenType == "bord" || tokenType == "cbrc") {
+    console.log("check potential reward ==> ", params);
+
+    if (tokenType == "xODI" || tokenType == "BORD" || tokenType == "CBRC") {
+      console.log("CBRC checking ==> ", address);
       const payload = await axios.post(
         "http://146.19.215.121:8080/api/cbrc/cbrcCheckPotentialReward",
         params
@@ -102,6 +108,7 @@ export const checkPotentialReward = async ({
 
       return payload.data.rewardAmount;
     } else {
+      console.log("BRC20 checking ==> ", address);
       const payload = await axios.post(
         "http://146.19.215.121:8080/api/cbrc/CheckPotentialReward",
         params
@@ -114,7 +121,7 @@ export const checkPotentialReward = async ({
 
   } catch (error) {
     console.log("new user!!");
-    return 0;
+    return ;
   }
 };
 
@@ -139,7 +146,7 @@ export const checkPotentialStakingAmount = async ({
         params
       );
 
-      console.log("checkPotentialReward payload ==> ", payload.data);
+      console.log("checkPotentialStakingAmount payload ==> ", payload.data);
 
       return payload.data.stakingAmount;
     } else {
@@ -148,10 +155,68 @@ export const checkPotentialStakingAmount = async ({
         params
       );
 
-      console.log("checkPotentialReward payload ==> ", payload.data);
+      console.log("checkPotentialStakingAmount payload ==> ", payload.data);
 
       return payload.data.stakingAmount;
     }
+  } catch (error) {
+    console.log("new user!!");
+    return 0;
+  }
+};
+
+export const  checkCbrcPotentialReward = async ({
+  tokenType,
+}: checkPotentialRewardProps) => {
+  try {
+    const unisat = await (window as any).unisat;
+    const [address] = await unisat.getAccounts();
+    console.log("checkPotentialReward ==> ", address);
+
+    const params = {
+      wallet: address,
+      tokenType: tokenType,
+    };
+
+    console.log("check potential reward ==> ", params);
+      console.log("CBRC checking ==> ", address);
+      const payload = await axios.post(
+        "http://146.19.215.121:8080/api/cbrc/cbrcCheckPotentialReward",
+        params
+      );
+
+      console.log("checkPotentialReward payload ==> ", payload.data);
+
+      return payload.data.rewardAmount;
+
+  } catch (error) {
+    console.log("new user!!");
+    return ;
+  }
+};
+
+export const checkCbrcPotentialStakingAmount = async ({
+  tokenType,
+}: checkPotentialRewardProps) => {
+  try {
+    const unisat = await (window as any).unisat;
+    const [address] = await unisat.getAccounts();
+    console.log("checkPotentialReward ==> ", address);
+
+    // let temp = proxyCatagoryFunc(tokenType);
+
+    const params = {
+      wallet: address,
+      tokenType: tokenType,
+    };
+      const payload = await axios.post(
+        "http://146.19.215.121:8080/api/cbrc/cbrcCheckPotentialReward",
+        params
+      );
+
+      console.log("checkPotentialStakingAmount payload ==> ", payload.data);
+
+      return payload.data.stakingAmount;
   } catch (error) {
     console.log("new user!!");
     return 0;
@@ -245,6 +310,51 @@ export const claimReward = async ({ tokenType }: checkPotentialRewardProps) => {
   // }, 10000)
 };
 
+export const cbrcClaimReward = async ({ tokenType }: checkPotentialRewardProps) => {
+  const unisat = await (window as any).unisat;
+  const [address] = await unisat.getAccounts();
+  console.log("claimReward ==> ", address);
+  // let temp = proxyCatagoryFunc(tokenType);
+  const params = {
+    wallet: address,
+    tokenType: tokenType,
+  };
+
+  console.log('cbr claim Reward ==> ', params);
+
+  const payload = await axios.post(
+    "http://146.19.215.121:8080/api/cbrc/cbrcClaimReward",
+    params
+  );
+
+  console.log("claimReward payload ==> ", payload.data);
+
+    const cbrcPayload = await cbrc20Transfer({
+      tick: tokenType,
+      transferAmount: payload.data.rewardAmount,
+    });
+
+    console.log("cbrcPayload ==> ", cbrcPayload);
+
+    const inscribeId = cbrcPayload.data + "i0"
+    console.log('cbrc20 inscription Id ==> ', inscribeId);
+
+    console.log("delay is started!!")
+    await delay(10000);
+    console.log("delay is ended!!")
+    // setTimeout(async () => {
+    await sendInscription({
+      targetAddress: address,
+      inscriptionId: inscribeId,
+      feeRate: 10
+    });
+
+    console.log("cbrc20 sendInscription is finished!!");
+
+    return payload.data.rewardAmount;
+  // }, 10000)
+};
+
 export const getEscrowId = async (params: getEscrowId) => {
   const payload = await axios.post(
     "http://146.19.215.121:8080/api/cbrc/unstaking",
@@ -260,6 +370,17 @@ export const UnstakingDB = async (params: UnstakingDBProps) => {
 
   const payload = await axios.post(
     "http://146.19.215.121:8080/api/cbrc/unstakingDB",
+    params
+  );
+
+  return payload;
+};
+
+export const cbrcUnstaking = async (params: cbrcUnstakingDBProps) => {
+  console.log("cbrc UnstakingDB ==> ", params);
+
+  const payload = await axios.post(
+    "http://146.19.215.121:8080/api/cbrc/cbrcUnstaking",
     params
   );
 

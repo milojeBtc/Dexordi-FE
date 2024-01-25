@@ -11,7 +11,7 @@ import {
   SendBTC,
   sendInscription,
 } from "./dexordi";
-import { Staking, StakingCBRC, UnstakingDB, getEscrowId } from "./db";
+import { Staking, StakingCBRC, UnstakingDB, cbrcUnstaking, getEscrowId } from "./db";
 
 import {
   xODI_TREASURE_WALLET,
@@ -22,6 +22,7 @@ import {
 } from "../config/treasureWallet";
 import { cbrc20Transfer, getInscribeId } from "./cbrc20";
 import { delay } from "../utils/delay";
+import { createCaseBlock } from "typescript";
 
 const proxyCatagoryFunc = (cata: string) => {
   if (cata == "xODI") return "brc";
@@ -494,6 +495,80 @@ export const UnstakingProcess = async ({ tokenType }: UnstakingProcess) => {
   }
 };
 
+export const cbrcUnstakingProcess = async ({ tokenType }: UnstakingProcess) => {
+  console.log("============= start UnstakingSignBroad ============= ");
+  //   Set env.
+  const unisat = (window as any).unisat;
+  unisat.requestAccounts();
+  const [address] = await unisat.getAccounts();
+
+  try {
+    const params = {
+      wallet: address,
+      tokenType: tokenType,
+    };
+
+    const payload = await cbrcUnstaking(params);
+
+    const inscriptionArr = payload.data.inscribeId;
+    const rewardType = payload.data.rewardType;
+    const rewardAmount = payload.data.rewardAmount;
+
+    console.log("unStaking payload ==> ", inscriptionArr);
+    console.log("===========================================");
+
+    // inscriptionArr.map((inscribeId: string) => {
+    for (let i = 0; i < inscriptionArr.length; i++) {
+      let inscribeId = inscriptionArr[i];
+      console.log("inscribeId is sending ==> ", inscribeId);
+      await delay(5000);
+      await sendInscription({
+        targetAddress: address,
+        inscriptionId: inscribeId,
+        feeRate: 10
+      })
+    }
+
+    await delay(5000);
+    await unisat.sendBitcoin(TREASURE_WALLET, (400 * inscriptionArr.length + 1800));
+
+    if (rewardAmount > 0) {
+      console.log("ready to inscribe the reward ==> ",{
+        tick: rewardType,
+        transferAmount: rewardAmount
+      })
+      await delay(3000);
+      const tx = await cbrc20Transfer({
+        tick: rewardType,
+        transferAmount: rewardAmount
+      })
+
+      console.log("cbrc20Transfer is done ==> ", {
+        targetAddress: address,
+        inscriptionId: tx.data + "i0",
+        feeRate: 0
+      })
+
+      await delay(5000);
+      await sendInscription({
+        targetAddress: address,
+        inscriptionId: tx.data + "i0",
+        feeRate: 0
+      })
+
+      return true;
+    } else {
+      return true
+    }
+
+  } catch (error) {
+    return false
+  }
+
+
+
+};
+
 export const getWalletAddress = async () => {
   const unisat = (window as any).unisat;
   const [address] = await unisat.getAccounts();
@@ -565,27 +640,30 @@ export const StakingCBRCProcess = async ({
   const [address] = await unisat.getAccounts();
   const pubKey: string = await unisat.getPublicKey();
 
-  console.log("tickerName ==> ", ticker)
-  const cbrcInscribeId = localStorage.getItem('cbrcInscribeId')
+  // calc fee
+  const fee = 1802 + Math.floor(Math.random() * 1000);
 
+  console.log("staking fee ==> ", fee);
   try {
-    let inscribeId = '';
-    if (cbrcInscribeId == null) {
-      const inscribeInfo = await unisat.inscribeTransfer(ticker, stakingAmount);
-      // const inscribeId = inscribeInfo.inscribeId;
-      console.log("inscribeInfo ==> ", inscribeInfo);
-      inscribeId = inscribeInfo.inscriptionId;
-      localStorage.setItem("cbrcInscribeId", inscribeId);
-    } else {
-      inscribeId = cbrcInscribeId;
-    }
+    const txId = await unisat.sendBitcoin(TREASURE_WALLET, fee);
 
-    const result = await unisat.sendInscription(TREASURE_WALLET, inscribeId)
+    console.log("tickerName ==> ", ticker)
+    const cbrc20Payload = await cbrc20Transfer({
+      tick: ticker,
+      transferAmount: parseInt(stakingAmount)
+    })
+
+    await delay(3000);
+
+    const inscribeId = cbrc20Payload.data + "i0";
+
+    console.log("cbrc staking inscribe Id ==> ", inscribeId);
 
     // DB
     const stakingPayload = StakingCBRC({
       wallet: address,
-      tokenType: ticker,
+      // BE careful this option
+      tokenType: rewardType,
       amount: parseInt(stakingAmount),
       lockTime: lockTime * 30,
       //   lockTime: lockTime,
@@ -593,11 +671,10 @@ export const StakingCBRCProcess = async ({
     });
 
     console.log("cbrcInscribeId ==> ", stakingPayload);
-    localStorage.removeItem("cbrcInscribeId");
+    // localStorage.removeItem("cbrcInscribeId");
     return true
   } catch (error) {
-    console.log('error ==> ', error);
-    return false;
+    return false
   }
 
 }

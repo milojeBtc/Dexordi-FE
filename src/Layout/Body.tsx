@@ -75,7 +75,7 @@ export default function Body() {
             onClick={() => changeStage()}
           >
             <p className="font-DM-sans text-[20px] font-bold text-white text-center">
-              {stage ? 'STAKING POOL (BRC20)' : 'STAKING POOL (CBRC20)'}
+              {stage ? 'STAKING POOL (CBRC20)' : 'STAKING POOL (BRC20)'}
             </p>
           </div> 
           {stage ?
@@ -87,11 +87,11 @@ export default function Body() {
                 <StakeFormPanel catagory="LIGO" /></>)
 
             : (
-              <><StakeFormPanel2 catagory="BORD-xODI" />
+              <><StakeFormPanel2 catagory="xODI" />
 
-                <StakeFormPanel2 catagory="xODI-BORD" />
+                <StakeFormPanel2 catagory="BORD" />
 
-                <StakeFormPanel2 catagory="xODI-CBRC" /></>)}
+                <StakeFormPanel2 catagory="CBRC" /></>)}
           <div className="mt-10 mb-20">
             <BlankComp />
           </div>
